@@ -49,7 +49,11 @@ const configIniziale: LegaConfig = {
   ordineAsta: "random",
 };
 
-export default function Wizard() {
+interface WizardProps {
+  onComplete: () => void;
+}
+
+export default function Wizard({ onComplete }: WizardProps) {
   const [passo, setPasso] = useState(1);
   const [config, setConfig] = useState<LegaConfig>(configIniziale);
 
@@ -62,7 +66,7 @@ export default function Wizard() {
 
   const completaWizard = () => {
     localStorage.setItem("legaconfig", JSON.stringify(config));
-    alert("Configurazione salvata! Prossimo passo: importa il listone.");
+    onComplete();
   };
 
   const passi = [
