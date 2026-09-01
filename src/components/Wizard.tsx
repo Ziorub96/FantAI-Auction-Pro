@@ -50,7 +50,10 @@ export default function Wizard({ onComplete }: WizardProps) {
   const [passo, setPasso] = useState(1);
   const [config, setConfig] = useState<LegaConfig>(configIniziale);
 
-  const vaiAvanti = () => setPasso((p) => p + 1);
+  const vaiAvanti = () => {
+    console.log("vaiAvanti chiamato, passo attuale:", passo);
+    setPasso((p) => p + 1);
+  };
   const vaiIndietro = () => setPasso((p) => p - 1);
 
   const aggiornaConfig = (nuovaParte: Partial<LegaConfig>) => {
@@ -62,9 +65,10 @@ export default function Wizard({ onComplete }: WizardProps) {
     if (onComplete) onComplete();
   };
 
-  // ---------- PASSO 1 ----------
-  const Passo1Benvenuto = () => (
-    <div className="text-center">
+  // Costruzione dei passi come semplice array di JSX
+  const passi = [
+    // PASSO 1
+    <div key="1" className="text-center">
       <h1 className="text-4xl font-bold text-green-500 mb-4">FantAI Auction Pro</h1>
       <p className="text-gray-300 mb-8">
         Configura la tua lega per ottenere un assistente d'asta intelligente.
@@ -75,12 +79,10 @@ export default function Wizard({ onComplete }: WizardProps) {
       >
         Nuova Lega
       </button>
-    </div>
-  );
+    </div>,
 
-  // ---------- PASSO 2 ----------
-  const Passo2Partecipanti = () => (
-    <div>
+    // PASSO 2
+    <div key="2">
       <h2 className="text-2xl font-bold text-white mb-6">Numero partecipanti</h2>
       <div className="grid grid-cols-2 gap-4 mb-8">
         {[6, 8, 10, 12].map((num) => (
@@ -107,12 +109,10 @@ export default function Wizard({ onComplete }: WizardProps) {
         <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
         <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
       </div>
-    </div>
-  );
+    </div>,
 
-  // ---------- PASSO 3 ----------
-  const Passo3Budget = () => (
-    <div>
+    // PASSO 3
+    <div key="3">
       <h2 className="text-2xl font-bold text-white mb-6">Budget iniziale</h2>
       <input
         type="number"
@@ -125,12 +125,10 @@ export default function Wizard({ onComplete }: WizardProps) {
         <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
         <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
       </div>
-    </div>
-  );
+    </div>,
 
-  // ---------- PASSO 4 ----------
-  const Passo4Modalita = () => (
-    <div>
+    // PASSO 4
+    <div key="4">
       <h2 className="text-2xl font-bold text-white mb-6">Modalità</h2>
       <div className="space-y-4 mb-8">
         <button
@@ -158,12 +156,10 @@ export default function Wizard({ onComplete }: WizardProps) {
         <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
         <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
       </div>
-    </div>
-  );
+    </div>,
 
-  // ---------- PASSO 5 ----------
-  const Passo5Rosa = () => (
-    <div>
+    // PASSO 5
+    <div key="5">
       <h2 className="text-2xl font-bold text-white mb-6">Composizione rosa</h2>
       <div className="space-y-4 mb-8">
         {[
@@ -195,63 +191,55 @@ export default function Wizard({ onComplete }: WizardProps) {
         <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
         <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
       </div>
-    </div>
-  );
+    </div>,
 
-  // ---------- PASSO 6 ----------
-  const Passo6Regole = () => {
-    const toggle = (chiave: keyof LegaConfig["regole"]) => {
-      aggiornaConfig({
-        regole: {
-          ...config.regole,
-          [chiave]: !config.regole[chiave],
-        },
-      });
-    };
-
-    return (
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-6">Regole</h2>
-        <div className="space-y-4 mb-8">
-          {[
-            { nome: "Modificatore difesa", chiave: "modificatoreDifesa" },
-            { nome: "Imbattibilità", chiave: "imbattibilita" },
-            { nome: "Porta inviolata", chiave: "portaInviolata" },
-            { nome: "Assist", chiave: "assist" },
-            { nome: "Rigori", chiave: "rigori" },
-          ].map((opzione) => (
-            <div key={opzione.chiave} className="flex items-center justify-between">
-              <span className="text-gray-300">{opzione.nome}</span>
-              <button
-                onClick={() => toggle(opzione.chiave as keyof LegaConfig["regole"])}
-                className={`w-14 h-8 rounded-full p-1 transition-colors ${
+    // PASSO 6
+    <div key="6">
+      <h2 className="text-2xl font-bold text-white mb-6">Regole</h2>
+      <div className="space-y-4 mb-8">
+        {[
+          { nome: "Modificatore difesa", chiave: "modificatoreDifesa" },
+          { nome: "Imbattibilità", chiave: "imbattibilita" },
+          { nome: "Porta inviolata", chiave: "portaInviolata" },
+          { nome: "Assist", chiave: "assist" },
+          { nome: "Rigori", chiave: "rigori" },
+        ].map((opzione) => (
+          <div key={opzione.chiave} className="flex items-center justify-between">
+            <span className="text-gray-300">{opzione.nome}</span>
+            <button
+              onClick={() =>
+                aggiornaConfig({
+                  regole: {
+                    ...config.regole,
+                    [opzione.chiave]: !config.regole[opzione.chiave as keyof LegaConfig["regole"]],
+                  },
+                })
+              }
+              className={`w-14 h-8 rounded-full p-1 transition-colors ${
+                config.regole[opzione.chiave as keyof LegaConfig["regole"]]
+                  ? "bg-green-600"
+                  : "bg-gray-700"
+              }`}
+            >
+              <div
+                className={`w-6 h-6 rounded-full bg-white transform transition-transform ${
                   config.regole[opzione.chiave as keyof LegaConfig["regole"]]
-                    ? "bg-green-600"
-                    : "bg-gray-700"
+                    ? "translate-x-6"
+                    : ""
                 }`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full bg-white transform transition-transform ${
-                    config.regole[opzione.chiave as keyof LegaConfig["regole"]]
-                      ? "translate-x-6"
-                      : ""
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between">
-          <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-          <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
-        </div>
+              />
+            </button>
+          </div>
+        ))}
       </div>
-    );
-  };
+      <div className="flex justify-between">
+        <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+        <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
+      </div>
+    </div>,
 
-  // ---------- PASSO 7 ----------
-  const Passo7Ordine = () => (
-    <div>
+    // PASSO 7
+    <div key="7">
       <h2 className="text-2xl font-bold text-white mb-6">Ordine asta</h2>
       <div className="space-y-4 mb-8">
         {[
@@ -285,18 +273,7 @@ export default function Wizard({ onComplete }: WizardProps) {
           Completa
         </button>
       </div>
-    </div>
-  );
-
-  // Render del passo corrente
-  const passi = [
-    <Passo1Benvenuto key="1" />,
-    <Passo2Partecipanti key="2" />,
-    <Passo3Budget key="3" />,
-    <Passo4Modalita key="4" />,
-    <Passo5Rosa key="5" />,
-    <Passo6Regole key="6" />,
-    <Passo7Ordine key="7" />,
+    </div>,
   ];
 
   return (
