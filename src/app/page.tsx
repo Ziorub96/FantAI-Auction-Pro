@@ -1,398 +1,691 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
+import { useState } from "react";
+
+type Modalita = "classic" | "mantra";
+type OrdineAsta = "random" | "libera" | "manuale";
+
+interface RosaConfig {
+  portieri: number;
+  difensori: number;
+  centrocampisti: number;
+  attaccanti: number;
+}
+
+interface RegoleConfig {
+  modificatoreDifesa: boolean;
+  imbattibilita: boolean;
+  portaInviolata: boolean;
+  assist: boolean;
+  rigori: boolean;
+}
 
 interface LegaConfig {
   partecipanti: number;
   budget: number;
-  modalita: "classic" | "mantra";
-  rosa: {
-    portieri: number;
-    difensori: number;
-    centrocampisti: number;
-    attaccanti: number;
-  };
-  regole: {
-    modificatoreDifesa: boolean;
-    imbattibilita: boolean;
-    portaInviolata: boolean;
-    assist: boolean;
-    rigori: boolean;
-  };
-  ordineAsta: "random" | "libera" | "manuale";
+  modalita: Modalita;
+  rosa: RosaConfig;
+  regole: RegoleConfig;
+  ordineAsta: OrdineAsta;
 }
 
-const configIniziale: LegaConfig = {
+const CONFIG_INIZIALE: LegaConfig = {
   partecipanti: 8,
   budget: 500,
   modalita: "classic",
+
   rosa: {
     portieri: 3,
     difensori: 8,
     centrocampisti: 8,
     attaccanti: 6,
   },
+
   regole: {
     modificatoreDifesa: false,
     imbattibilita: false,
     portaInviolata: false,
-    assist: false,
-    rigori: false,
+    assist: true,
+    rigori: true,
   },
+
   ordineAsta: "random",
 };
 
-export default function Home() {
-  const [view, setView] = useState<"wizard" | "import" | "dashboard">("wizard");
-  const [passo, setPasso] = useState(1);
-  const [config, setConfig] = useState<LegaConfig>(configIniziale);
-  const [fileName, setFileName] = useState<string>("");
-  const [players, setPlayers] = useState<any[]>([]);
-  const [message, setMessage] = useState<string>("");
+type View = "wizard" | "import";
 
-  // ---- Funzioni wizard ----
-  const vaiAvanti = () => setPasso((p) => p + 1);
-  const vaiIndietro = () => setPasso((p) => p - 1);
-  const aggiornaConfig = (nuovaParte: Partial<LegaConfig>) => {
-    setConfig((prev) => ({ ...prev, ...nuovaParte }));
+export default function Home() {
+  const [view, setView] = useState<View>("wizard");
+  const [passo, setPasso] = useState(1);
+  const [config, setConfig] = useState<LegaConfig>(CONFIG_INIZIALE);
+
+  const vaiAvanti = () => {
+    setPasso((precedente) => {
+      if (precedente >= 7) {
+        return 7;
+      }
+
+      return precedente + 1;
+    });
   };
+
+  const vaiIndietro = () => {
+    setPasso((precedente) => {
+      if (precedente <= 1) {
+        return 1;
+      }
+
+      return precedente - 1;
+    });
+  };
+
+  const aggiornaConfig = <K extends keyof LegaConfig>(
+    chiave: K,
+    valore: LegaConfig[K]
+  ) => {
+    setConfig((precedente) => ({
+      ...precedente,
+      [chiave]: valore,
+    }));
+  };
+
+  const aggiornaRosa = <K extends keyof RosaConfig>(
+    chiave: K,
+    valore: number
+  ) => {
+    setConfig((precedente) => ({
+      ...precedente,
+      rosa: {
+        ...precedente.rosa,
+        [chiave]: valore,
+      },
+    }));
+  };
+
+  const aggiornaRegola = <K extends keyof RegoleConfig>(
+    chiave: K,
+    valore: boolean
+  ) => {
+    setConfig((precedente) => ({
+      ...precedente,
+      regole: {
+        ...precedente.regole,
+        [chiave]: valore,
+      },
+    }));
+  };
+
   const completaWizard = () => {
-    localStorage.setItem("legaconfig", JSON.stringify(config));
+    try {
+      localStorage.setItem("fantai-legaconfig", JSON.stringify(config));
+    } catch (errore) {
+      console.error("Errore salvataggio configurazione:", errore);
+    }
+
     setView("import");
   };
 
-  // ---- Funzione import ----
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setFileName(file.name);
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-
-    localStorage.setItem("listone", JSON.stringify(jsonData));
-    setPlayers(jsonData);
-    setMessage(`Importati ${jsonData.length} giocatori dal file ${file.name}`);
+  const tornaAlWizard = () => {
+    setView("wizard");
+    setPasso(7);
   };
 
-  // ---- Vista: wizard ----
-  const contenutoPasso = () => {
-    switch (passo) {
-      case 1:
-        return (
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-green-500 mb-4">FantAI Auction Pro</h1>
-            <p className="text-gray-300 mb-8">
-              Configura la tua lega per ottenere un assistente d'asta intelligente.
+  if (view === "import") {
+    return (
+      <main className="min-h-screen bg-black text-white px-5 py-8">
+        <div className="mx-auto w-full max-w-md">
+          <div className="mb-8">
+            <p className="text-sm font-medium text-green-500">
+              CONFIGURAZIONE COMPLETATA
             </p>
+
+            <h1 className="mt-2 text-3xl font-bold">
+              Importa il listone
+            </h1>
+
+            <p className="mt-3 text-gray-400">
+              La lega è stata configurata. Il prossimo passaggio sarà
+              importare il listone dei giocatori.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h2 className="text-xl font-bold">
+              Import listone
+            </h2>
+
+            <p className="mt-2 text-sm text-gray-400">
+              L'importazione Excel/CSV verrà collegata nel prossimo passaggio.
+            </p>
+
+            <div className="mt-6 rounded-xl bg-black p-4">
+              <p className="text-sm text-gray-500">
+                Partecipanti
+              </p>
+
+              <p className="mt-1 text-lg font-semibold">
+                {config.partecipanti}
+              </p>
+
+              <p className="mt-4 text-sm text-gray-500">
+                Budget
+              </p>
+
+              <p className="mt-1 text-lg font-semibold">
+                {config.budget} crediti
+              </p>
+
+              <p className="mt-4 text-sm text-gray-500">
+                Modalità
+              </p>
+
+              <p className="mt-1 text-lg font-semibold">
+                {config.modalita === "classic"
+                  ? "Classic"
+                  : "Mantra"}
+              </p>
+            </div>
+
             <button
-              onClick={vaiAvanti}
-              className="w-full rounded-lg bg-orange-600 px-8 py-3 text-lg font-semibold text-white shadow-lg hover:bg-orange-500 transition"
+              type="button"
+              onClick={tornaAlWizard}
+              className="mt-6 w-full rounded-xl border border-gray-700 bg-gray-800 px-5 py-3 font-semibold text-white active:scale-[0.98]"
             >
-              Nuova Lega
+              Modifica configurazione
             </button>
           </div>
-        );
-      case 2:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Numero partecipanti</h2>
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {[6, 8, 10, 12].map((num) => (
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-black text-white px-5 py-8">
+      <div className="mx-auto w-full max-w-md">
+
+        {/* HEADER */}
+
+        <div className="mb-8 text-center">
+          <p className="text-xs font-semibold tracking-widest text-orange-500">
+            FANTAI AUCTION PRO
+          </p>
+
+          <h1 className="mt-2 text-3xl font-bold">
+            Configura la tua lega
+          </h1>
+
+          <p className="mt-2 text-sm text-gray-400">
+            Passo {passo} di 7
+          </p>
+        </div>
+
+        {/* PROGRESS BAR */}
+
+        <div className="mb-8 h-2 overflow-hidden rounded-full bg-gray-800">
+          <div
+            className="h-full rounded-full bg-orange-600 transition-all duration-300"
+            style={{
+              width: `${(passo / 7) * 100}%`,
+            }}
+          />
+        </div>
+
+        {/* PASSO 1 */}
+
+        {passo === 1 && (
+          <section>
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6 text-center">
+              <div className="mb-5 text-5xl">
+                ⚽
+              </div>
+
+              <h2 className="text-2xl font-bold">
+                Benvenuto in FantAI
+              </h2>
+
+              <p className="mt-4 leading-6 text-gray-400">
+                FantAI Auction Pro ti aiuterà durante l'asta
+                analizzando giocatori, budget, squadre e andamento
+                dell'asta in tempo reale.
+              </p>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="mt-8 w-full rounded-xl bg-orange-600 px-6 py-4 text-lg font-bold text-white shadow-lg active:scale-[0.98]"
+              >
+                Nuova Lega
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* PASSO 2 */}
+
+        {passo === 2 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Numero partecipanti
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Quante squadre partecipano alla lega?
+            </p>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {[6, 8, 10, 12].map((numero) => (
                 <button
-                  key={num}
-                  onClick={() => aggiornaConfig({ partecipanti: num })}
-                  className={`py-4 rounded-lg text-xl font-bold border ${
-                    config.partecipanti === num
-                      ? "bg-green-600 border-green-400 text-white"
-                      : "bg-gray-800 border-gray-700 text-gray-300"
+                  key={numero}
+                  type="button"
+                  onClick={() =>
+                    aggiornaConfig("partecipanti", numero)
+                  }
+                  className={`rounded-xl border p-5 text-xl font-bold ${
+                    config.partecipanti === numero
+                      ? "border-green-500 bg-green-600 text-white"
+                      : "border-gray-700 bg-gray-900 text-gray-300"
                   }`}
                 >
-                  {num}
+                  {numero}
                 </button>
               ))}
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
               <button
-                onClick={() => aggiornaConfig({ partecipanti: 14 })}
-                className="py-4 rounded-lg text-xl font-bold border bg-gray-800 border-gray-700 text-gray-300"
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
               >
-                Personalizzato
+                Indietro
+              </button>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
+              >
+                Avanti
               </button>
             </div>
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-              <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
+          </section>
+        )}
+
+        {/* PASSO 3 */}
+
+        {passo === 3 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Budget iniziale
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Quanti crediti ha ogni squadra?
+            </p>
+
+            <div className="mt-8">
+              <label
+                htmlFor="budget"
+                className="mb-2 block text-sm text-gray-400"
+              >
+                Crediti
+              </label>
+
+              <input
+                id="budget"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                value={config.budget}
+                onChange={(evento) =>
+                  aggiornaConfig(
+                    "budget",
+                    Number(evento.target.value)
+                  )
+                }
+                className="w-full rounded-xl border border-gray-700 bg-gray-900 p-4 text-2xl font-bold text-white outline-none focus:border-orange-500"
+              />
             </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Budget iniziale</h2>
-            <input
-              type="number"
-              value={config.budget}
-              onChange={(e) => aggiornaConfig({ budget: Number(e.target.value) })}
-              className="w-full p-3 rounded-lg bg-gray-800 text-white text-xl mb-8 border border-gray-700"
-              placeholder="Es. 500"
-            />
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-              <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
-            </div>
-          </div>
-        );
-      case 4:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Modalità</h2>
-            <div className="space-y-4 mb-8">
+
+            <div className="mt-8 flex items-center justify-between">
               <button
-                onClick={() => aggiornaConfig({ modalita: "classic" })}
-                className={`w-full p-4 rounded-lg border ${
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
+              >
+                Indietro
+              </button>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
+              >
+                Avanti
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* PASSO 4 */}
+
+        {passo === 4 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Modalità di gioco
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Scegli il sistema utilizzato nella tua lega.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                onClick={() =>
+                  aggiornaConfig("modalita", "classic")
+                }
+                className={`w-full rounded-xl border p-5 text-left ${
                   config.modalita === "classic"
-                    ? "bg-green-600 border-green-400 text-white"
-                    : "bg-gray-800 border-gray-700 text-gray-300"
+                    ? "border-green-500 bg-green-600"
+                    : "border-gray-700 bg-gray-900"
                 }`}
               >
-                Classic
+                <p className="text-lg font-bold">
+                  Classic
+                </p>
+
+                <p className="mt-1 text-sm text-gray-300">
+                  Sistema tradizionale con ruoli standard.
+                </p>
               </button>
+
               <button
-                onClick={() => aggiornaConfig({ modalita: "mantra" })}
-                className={`w-full p-4 rounded-lg border ${
+                type="button"
+                onClick={() =>
+                  aggiornaConfig("modalita", "mantra")
+                }
+                className={`w-full rounded-xl border p-5 text-left ${
                   config.modalita === "mantra"
-                    ? "bg-green-600 border-green-400 text-white"
-                    : "bg-gray-800 border-gray-700 text-gray-300"
+                    ? "border-green-500 bg-green-600"
+                    : "border-gray-700 bg-gray-900"
                 }`}
               >
-                Mantra
+                <p className="text-lg font-bold">
+                  Mantra
+                </p>
+
+                <p className="mt-1 text-sm text-gray-300">
+                  Sistema con ruoli e vincoli Mantra.
+                </p>
               </button>
             </div>
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-              <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
+
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
+              >
+                Indietro
+              </button>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
+              >
+                Avanti
+              </button>
             </div>
-          </div>
-        );
-      case 5:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Composizione rosa</h2>
-            <div className="space-y-4 mb-8">
-              {[
-                { nome: "Portieri", chiave: "portieri" },
-                { nome: "Difensori", chiave: "difensori" },
-                { nome: "Centrocampisti", chiave: "centrocampisti" },
-                { nome: "Attaccanti", chiave: "attaccanti" },
-              ].map((ruolo) => (
-                <div key={ruolo.chiave} className="flex items-center justify-between">
-                  <span className="text-gray-300">{ruolo.nome}</span>
+          </section>
+        )}
+
+        {/* PASSO 5 */}
+
+        {passo === 5 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Composizione rosa
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Imposta il numero di giocatori per ruolo.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {(
+                [
+                  ["portieri", "Portieri"],
+                  ["difensori", "Difensori"],
+                  ["centrocampisti", "Centrocampisti"],
+                  ["attaccanti", "Attaccanti"],
+                ] as const
+              ).map(([chiave, nome]) => (
+                <div
+                  key={chiave}
+                  className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900 p-4"
+                >
+                  <span className="font-medium text-gray-300">
+                    {nome}
+                  </span>
+
                   <input
                     type="number"
                     min={0}
-                    value={config.rosa[ruolo.chiave as keyof typeof config.rosa]}
-                    onChange={(e) =>
-                      aggiornaConfig({
-                        rosa: {
-                          ...config.rosa,
-                          [ruolo.chiave]: Number(e.target.value),
-                        },
-                      })
+                    inputMode="numeric"
+                    value={config.rosa[chiave]}
+                    onChange={(evento) =>
+                      aggiornaRosa(
+                        chiave,
+                        Number(evento.target.value)
+                      )
                     }
-                    className="w-20 p-2 rounded bg-gray-800 text-white text-center border border-gray-700"
+                    className="w-20 rounded-lg border border-gray-700 bg-gray-800 p-2 text-center text-lg font-bold text-white"
                   />
                 </div>
               ))}
             </div>
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-              <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
-            </div>
-          </div>
-        );
-      case 6:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Regole</h2>
-            <div className="space-y-4 mb-8">
-              {[
-                { nome: "Modificatore difesa", chiave: "modificatoreDifesa" },
-                { nome: "Imbattibilità", chiave: "imbattibilita" },
-                { nome: "Porta inviolata", chiave: "portaInviolata" },
-                { nome: "Assist", chiave: "assist" },
-                { nome: "Rigori", chiave: "rigori" },
-              ].map((opzione) => (
-                <div key={opzione.chiave} className="flex items-center justify-between">
-                  <span className="text-gray-300">{opzione.nome}</span>
-                  <button
-                    onClick={() =>
-                      aggiornaConfig({
-                        regole: {
-                          ...config.regole,
-                          [opzione.chiave]: !config.regole[opzione.chiave as keyof LegaConfig["regole"]],
-                        },
-                      })
-                    }
-                    className={`w-14 h-8 rounded-full p-1 transition-colors ${
-                      config.regole[opzione.chiave as keyof LegaConfig["regole"]]
-                        ? "bg-green-600"
-                        : "bg-gray-700"
-                    }`}
-                  >
-                    <div
-                      className={`w-6 h-6 rounded-full bg-white transform transition-transform ${
-                        config.regole[opzione.chiave as keyof LegaConfig["regole"]]
-                          ? "translate-x-6"
-                          : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
-              <button onClick={vaiAvanti} className="bg-orange-600 text-white px-6 py-2 rounded-lg">Avanti</button>
-            </div>
-          </div>
-        );
-      case 7:
-        return (
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-6">Ordine asta</h2>
-            <div className="space-y-4 mb-8">
-              {[
-                { nome: "Random per ruolo", chiave: "random" },
-                { nome: "Libera", chiave: "libera" },
-                { nome: "Manuale", chiave: "manuale" },
-              ].map((opzione) => (
-                <button
-                  key={opzione.chiave}
-                  onClick={() =>
-                    aggiornaConfig({
-                      ordineAsta: opzione.chiave as LegaConfig["ordineAsta"],
-                    })
-                  }
-                  className={`w-full p-4 rounded-lg border ${
-                    config.ordineAsta === opzione.chiave
-                      ? "bg-green-600 border-green-400 text-white"
-                      : "bg-gray-800 border-gray-700 text-gray-300"
-                  }`}
-                >
-                  {opzione.nome}
-                </button>
-              ))}
-            </div>
-            <div className="flex justify-between">
-              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+
+            <div className="mt-8 flex items-center justify-between">
               <button
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
+              >
+                Indietro
+              </button>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
+              >
+                Avanti
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* PASSO 6 */}
+
+        {passo === 6 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Regole
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Seleziona le regole utilizzate nella tua lega.
+            </p>
+
+            <div className="mt-6 space-y-3">
+              {(
+                [
+                  ["modificatoreDifesa", "Modificatore difesa"],
+                  ["imbattibilita", "Imbattibilità"],
+                  ["portaInviolata", "Porta inviolata"],
+                  ["assist", "Assist"],
+                  ["rigori", "Rigori"],
+                ] as const
+              ).map(([chiave, nome]) => {
+                const attiva = config.regole[chiave];
+
+                return (
+                  <button
+                    key={chiave}
+                    type="button"
+                    onClick={() =>
+                      aggiornaRegola(chiave, !attiva)
+                    }
+                    className="flex w-full items-center justify-between rounded-xl border border-gray-800 bg-gray-900 p-4 text-left"
+                  >
+                    <span className="font-medium text-gray-300">
+                      {nome}
+                    </span>
+
+                    <span
+                      className={`relative h-7 w-12 rounded-full transition ${
+                        attiva
+                          ? "bg-green-600"
+                          : "bg-gray-700"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 h-5 w-5 rounded-full bg-white transition ${
+                          attiva
+                            ? "left-6"
+                            : "left-1"
+                        }`}
+                      />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
+              >
+                Indietro
+              </button>
+
+              <button
+                type="button"
+                onClick={vaiAvanti}
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
+              >
+                Avanti
+              </button>
+            </div>
+          </section>
+        )}
+
+        {/* PASSO 7 */}
+
+        {passo === 7 && (
+          <section>
+            <h2 className="text-2xl font-bold">
+              Ordine asta
+            </h2>
+
+            <p className="mt-2 text-gray-400">
+              Come vuoi gestire l'ordine di chiamata?
+            </p>
+
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                onClick={() =>
+                  aggiornaConfig("ordineAsta", "random")
+                }
+                className={`w-full rounded-xl border p-5 text-left ${
+                  config.ordineAsta === "random"
+                    ? "border-green-500 bg-green-600"
+                    : "border-gray-700 bg-gray-900"
+                }`}
+              >
+                <p className="font-bold">
+                  Random per ruolo
+                </p>
+
+                <p className="mt-1 text-sm text-gray-300">
+                  L'ordine viene generato automaticamente.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  aggiornaConfig("ordineAsta", "libera")
+                }
+                className={`w-full rounded-xl border p-5 text-left ${
+                  config.ordineAsta === "libera"
+                    ? "border-green-500 bg-green-600"
+                    : "border-gray-700 bg-gray-900"
+                }`}
+              >
+                <p className="font-bold">
+                  Libera
+                </p>
+
+                <p className="mt-1 text-sm text-gray-300">
+                  Puoi chiamare liberamente i giocatori.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  aggiornaConfig("ordineAsta", "manuale")
+                }
+                className={`w-full rounded-xl border p-5 text-left ${
+                  config.ordineAsta === "manuale"
+                    ? "border-green-500 bg-green-600"
+                    : "border-gray-700 bg-gray-900"
+                }`}
+              >
+                <p className="font-bold">
+                  Manuale
+                </p>
+
+                <p className="mt-1 text-sm text-gray-300">
+                  Decidi manualmente l'ordine.
+                </p>
+              </button>
+            </div>
+
+            <div className="mt-8 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={vaiIndietro}
+                className="px-2 py-3 text-gray-400 underline"
+              >
+                Indietro
+              </button>
+
+              <button
+                type="button"
                 onClick={completaWizard}
-                className="bg-orange-600 text-white px-6 py-2 rounded-lg"
+                className="rounded-xl bg-orange-600 px-7 py-3 font-bold text-white active:scale-[0.98]"
               >
                 Completa
               </button>
             </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+          </section>
+        )}
 
-  // ---- Vista: import ----
-  const importView = (
-    <div className="w-full max-w-md mx-auto mt-10 p-6 bg-gray-900 rounded-lg border border-gray-800">
-      <h2 className="text-2xl font-bold text-white mb-4">Importa Listone</h2>
-      <label className="block mb-4">
-        <span className="text-gray-300">Seleziona file Excel o CSV</span>
-        <input
-          type="file"
-          accept=".xlsx,.xls,.csv"
-          onChange={handleFileUpload}
-          className="mt-2 block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-500"
-        />
-      </label>
-      {fileName && <p className="text-green-400 mb-2">File caricato: {fileName}</p>}
-      {message && <p className="text-green-400 mb-2">{message}</p>}
-      {players.length > 0 && (
-        <>
-          <div className="mt-4">
-            <p className="text-gray-300 mb-2">Anteprima (primi 5 giocatori):</p>
-            <ul className="space-y-1">
-              {players.slice(0, 5).map((player, index) => (
-                <li key={index} className="text-sm text-gray-400">
-                  {player["Nome"]} - {player["Ruolo"]}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <button
-            onClick={() => setView("dashboard")}
-            className="mt-6 w-full rounded-lg bg-green-600 px-6 py-3 text-white font-semibold hover:bg-green-500 transition"
-          >
-            Vai alla Dashboard
-          </button>
-        </>
-      )}
-    </div>
-  );
+        {/* DEBUG TEMPORANEO */}
 
-  // ---- Vista: dashboard ----
-  const dashboardView = (
-    <div className="w-full max-w-md mx-auto mt-10 p-6 bg-gray-900 rounded-lg border border-gray-800">
-      <h2 className="text-2xl font-bold text-green-500 mb-4">Dashboard Lega</h2>
-
-      <div className="mb-6 space-y-2 text-sm text-gray-300">
-        <p><span className="font-semibold">Partecipanti:</span> {config.partecipanti}</p>
-        <p><span className="font-semibold">Budget:</span> {config.budget} crediti</p>
-        <p><span className="font-semibold">Modalità:</span> {config.modalita === "classic" ? "Classic" : "Mantra"}</p>
-        <p><span className="font-semibold">Rosa:</span> {config.rosa.portieri} P, {config.rosa.difensori} D, {config.rosa.centrocampisti} C, {config.rosa.attaccanti} A</p>
-        <p><span className="font-semibold">Ordine asta:</span> {config.ordineAsta}</p>
+        <div className="mt-10 rounded-lg border border-gray-900 bg-gray-950 p-3 text-center">
+          <p className="text-xs text-gray-600">
+            Debug: view={view} · passo={passo}
+          </p>
+        </div>
       </div>
-
-      <h3 className="text-lg font-semibold text-white mb-2">Giocatori importati ({players.length})</h3>
-      {players.length > 0 ? (
-        <ul className="max-h-60 overflow-y-auto space-y-1 text-sm text-gray-400">
-          {players.slice(0, 20).map((player, index) => (
-            <li key={index}>
-              {player["Nome"]} - {player["Ruolo"]} - {player["Quotazione"]}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500">Nessun giocatore importato.</p>
-      )}
-
-      <div className="mt-6 space-y-3">
-        <button
-          onClick={() => alert("Modalità Asta in arrivo!")}
-          className="w-full rounded-lg bg-orange-600 px-6 py-3 text-white font-semibold hover:bg-orange-500 transition"
-        >
-          Modalità Asta
-        </button>
-        <button
-          onClick={() => {
-            localStorage.removeItem("legaconfig");
-            localStorage.removeItem("listone");
-            window.location.reload();
-          }}
-          className="w-full rounded-lg bg-gray-700 px-6 py-3 text-white font-semibold hover:bg-gray-600 transition"
-        >
-          Reimposta tutto
-        </button>
-      </div>
-    </div>
-  );
-
-  // ---- Render principale ----
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6">
-      {view === "wizard" && <div className="w-full max-w-md">{contenutoPasso()}</div>}
-      {view === "import" && importView}
-      {view === "dashboard" && dashboardView}
     </main>
   );
 }
