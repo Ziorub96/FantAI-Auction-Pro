@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import ImportListone from "@/components/ImportListone";
+import { PREZZI_STORICI } from "@/data/prezziStorici";
 
+// ---------- TIPI ----------
 interface LegaConfig {
   partecipanti: number;
   budget: number;
@@ -47,6 +49,28 @@ interface Acquisto {
   timestamp: string;
 }
 
+interface ProfiloStorico {
+  nome: string;
+  distribuzione: { P: number; D: number; C: number; A: number };
+  stile: string;
+  topPagati: number;
+  lowCost: number;
+}
+
+// ---------- PROFILI SCANDICCI ----------
+const PROFILI_SCANDICCI: ProfiloStorico[] = [
+  { nome: "Jonny", distribuzione: { P: 10, D: 11, C: 5, A: 71 }, stile: "Cacciatore di top", topPagati: 4, lowCost: 10 },
+  { nome: "Sina", distribuzione: { P: 9, D: 3, C: 15, A: 72 }, stile: "Attacco pesante", topPagati: 3, lowCost: 8 },
+  { nome: "Tofa", distribuzione: { P: 2, D: 8, C: 32, A: 58 }, stile: "Azzardatore", topPagati: 3, lowCost: 6 },
+  { nome: "Auri", distribuzione: { P: 10, D: 10, C: 29, A: 42 }, stile: "Scout paziente", topPagati: 3, lowCost: 9 },
+  { nome: "Gabb", distribuzione: { P: 10, D: 10, C: 20, A: 51 }, stile: "Power player", topPagati: 3, lowCost: 7 },
+  { nome: "Lollo", distribuzione: { P: 10, D: 12, C: 20, A: 56 }, stile: "Contrasto", topPagati: 3, lowCost: 7 },
+  { nome: "Rub+Gian", distribuzione: { P: 7, D: 9, C: 33, A: 51 }, stile: "Costruttore di giovani", topPagati: 3, lowCost: 5 },
+  { nome: "Nicco", distribuzione: { P: 6, D: 14, C: 36, A: 44 }, stile: "Centrocampista", topPagati: 3, lowCost: 6 },
+  { nome: "Faila+Papu", distribuzione: { P: 6, D: 7, C: 35, A: 46 }, stile: "Duello interno", topPagati: 3, lowCost: 9 },
+  { nome: "Toniesi", distribuzione: { P: 6, D: 8, C: 21, A: 63 }, stile: "Tradizionalista", topPagati: 3, lowCost: 7 },
+];
+
 const configIniziale: LegaConfig = {
   partecipanti: 8,
   budget: 500,
@@ -79,6 +103,9 @@ export default function Home() {
   const [prezzo, setPrezzo] = useState("");
   const [squadraAcquirente, setSquadraAcquirente] = useState("");
   const [messaggio, setMessaggio] = useState("");
+  const [filtroRuolo, setFiltroRuolo] = useState<string>("tutti");
+  const [ruoliCompletati, setRuoliCompletati] = useState<Set<string>>(new Set());
+  const [legaScandicci, setLegaScandicci] = useState<boolean>(false);
 
   // Inizializza squadre quando si entra in asta
   useEffect(() => {
@@ -89,11 +116,17 @@ export default function Home() {
         setSquadre(parsed);
         if (parsed.length > 0) setSquadraAcquirente(parsed[0].nome);
       } else {
-        const iniziali: Squadra[] = Array.from({ length: config.partecipanti }, (_, i) => ({
-          nome: `Squadra ${i + 1}`,
-          budget: config.budget,
-          giocatori: [],
-        }));
+        const iniziali: Squadra[] = legaScandicci
+          ? PROFILI_SCANDICCI.map((p) => ({
+              nome: p.nome,
+              budget: config.budget,
+              giocatori: [],
+            }))
+          : Array.from({ length: config.partecipanti }, (_, i) => ({
+              nome: `Squadra ${i + 1}`,
+              budget: config.budget,
+              giocatori: [],
+            }));
         setSquadre(iniziali);
         setSquadraAcquirente(iniziali[0]?.nome || "");
       }
@@ -106,7 +139,7 @@ export default function Home() {
         setAcquisti(JSON.parse(acquistiSalvati));
       }
     }
-  }, [view, config]);
+  }, [view, config, legaScandicci]);
 
   const vaiAvanti = () => setPasso((p) => Math.min(p + 1, 7));
   const vaiIndietro = () => setPasso((p) => Math.max(p - 1, 1));
@@ -117,6 +150,7 @@ export default function Home() {
 
   const salvaConfigurazione = () => {
     localStorage.setItem("fantai-legaconfig", JSON.stringify(config));
+    localStorage.setItem("fantai-lega-scandicci", JSON.stringify(legaScandicci));
     setView("import");
   };
 
@@ -128,26 +162,45 @@ export default function Home() {
 
   // ---------- FUNZIONI PER L'ASTA ----------
 
-  const giocatoriDisponibili = giocatori.filter(
-    (g) => !squadre.some((s) => s.giocatori.some((sg) => sg.nome === g.nome))
-  );
+  const giocatoriDisponibili = useMemo(() => {
+    return giocatori.filter(
+      (g) => !squadre.some((s) => s.giocatori.some((sg) => sg.nome === g.nome))
+    );
+  }, [giocatori, squadre]);
 
-  const giocatoriFiltrati = giocatoriDisponibili.filter((g) =>
-    g.nome.toLowerCase().includes(ricerca.toLowerCase())
-  );
+  const giocatoriFiltrati = useMemo(() => {
+    let lista = giocatoriDisponibili;
+    if (filtroRuolo !== "tutti") {
+      lista = lista.filter((g) => g.ruolo === filtroRuolo);
+    }
+    if (ricerca.trim()) {
+      lista = lista.filter((g) =>
+        g.nome.toLowerCase().includes(ricerca.toLowerCase())
+      );
+    }
+    return [...lista].sort((a, b) => (b.fvm || 0) - (a.fvm || 0));
+  }, [giocatoriDisponibili, filtroRuolo, ricerca]);
 
+  // Controlla se un ruolo è esaurito e genera analisi
+  useEffect(() => {
+    const ruoli = ["P", "D", "C", "A"];
+    const nuoviCompletati = new Set(ruoliCompletati);
+    for (const ruolo of ruoli) {
+      const disponibili = giocatoriDisponibili.filter((g) => g.ruolo === ruolo);
+      if (disponibili.length === 0 && !ruoliCompletati.has(ruolo)) {
+        nuoviCompletati.add(ruolo);
+        setMessaggio(`*** ${ruolo} FINITI ***\n\n${generaAnalisiRuolo(ruolo, squadre, giocatori)}`);
+      }
+    }
+    setRuoliCompletati(nuoviCompletati);
+  }, [giocatoriDisponibili, squadre, giocatori, ruoliCompletati]);
+
+  // Algoritmo prezzo consigliato con dati storici
   const calcolaPrezzoConsigliato = (player: Player): number => {
-    // Usa FVM come base, fallback alla quotazione
     const base = player.fvm || player.quotazioneIniziale || 10;
-
-    // Fattore di scala: se il listone è per budget 1000, e la lega usa X crediti,
-    // moltiplichiamo per (budget / 1000)
     const fattoreScala = config.budget / 1000;
-
-    // Prezzo base proporzionato
     let prezzoBase = base * fattoreScala;
 
-    // Inflazione: media prezzi pagati / media valori base dei giocatori acquistati
     let inflazione = 1;
     if (acquisti.length > 0) {
       const mediaPagata = acquisti.reduce((sum, a) => sum + a.prezzo, 0) / acquisti.length;
@@ -161,7 +214,6 @@ export default function Home() {
       }
     }
 
-    // Domanda di ruolo
     const ruolo = player.ruolo || "";
     const fabbisognoRuolo = config.rosa[ruolo as keyof typeof config.rosa] || 5;
     const giocatoriRuoloAcquistati = squadre.reduce(
@@ -170,23 +222,53 @@ export default function Home() {
     );
     const totaleNecessario = config.partecipanti * fabbisognoRuolo;
     const domanda = Math.max(1, totaleNecessario - giocatoriRuoloAcquistati);
-    const fattoreDomanda = 1 + (domanda / totaleNecessario) * 0.5; // max +50%
+    const fattoreDomanda = 1 + (domanda / totaleNecessario) * 0.5;
 
-    // Budget residuo medio
     const budgetResiduoMedio = squadre.length > 0
       ? squadre.reduce((sum, s) => sum + s.budget, 0) / squadre.length
       : config.budget;
     const fattoreBudget = budgetResiduoMedio / config.budget;
 
-    // Calcolo finale
-    let prezzoConsigliato = prezzoBase * inflazione * fattoreDomanda * fattoreBudget;
+    // Fattore profilo storico (solo se Scandicci)
+    let fattoreProfilo = 1;
+    if (legaScandicci && squadre.length > 0) {
+      const profiliInteressati = PROFILI_SCANDICCI.filter(
+        (p) => p.distribuzione[ruolo as keyof typeof p.distribuzione] > 25
+      );
+      if (profiliInteressati.length > 0) {
+        const mediaInteresse = profiliInteressati.reduce(
+          (sum, p) => sum + p.distribuzione[ruolo as keyof typeof p.distribuzione],
+          0
+        ) / profiliInteressati.length;
+        fattoreProfilo = 1 + (mediaInteresse - 20) / 100;
+      }
+    }
 
-    // Limite: non superare il 30% del budget individuale
+    // Prezzo base algoritmo
+    let prezzoAlgoritmo = prezzoBase * inflazione * fattoreDomanda * fattoreBudget * fattoreProfilo;
     const limiteMassimo = config.budget * 0.3;
-    prezzoConsigliato = Math.min(prezzoConsigliato, limiteMassimo);
-    prezzoConsigliato = Math.max(1, Math.round(prezzoConsigliato));
+    prezzoAlgoritmo = Math.min(prezzoAlgoritmo, limiteMassimo);
+    prezzoAlgoritmo = Math.max(1, Math.round(prezzoAlgoritmo));
 
-    return prezzoConsigliato;
+    // Prezzo storico (normalizzato)
+    const nomeNormalizzato = player.nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const prezzoStorico = PREZZI_STORICI[nomeNormalizzato];
+
+    let prezzoFinale: number;
+    if (prezzoStorico !== undefined) {
+      // Combina: 60% storico, 40% algoritmo
+      prezzoFinale = Math.round(0.6 * prezzoStorico + 0.4 * prezzoAlgoritmo);
+    } else {
+      prezzoFinale = prezzoAlgoritmo;
+    }
+
+    // Limite massimo
+    prezzoFinale = Math.min(prezzoFinale, limiteMassimo);
+    prezzoFinale = Math.max(1, prezzoFinale);
+    return prezzoFinale;
   };
 
   const registraAcquisto = () => {
@@ -229,7 +311,6 @@ export default function Home() {
     const nuoviAcquisti = [...acquisti, nuovoAcquisto];
     setAcquisti(nuoviAcquisti);
 
-    // Persistenza
     localStorage.setItem("fantai-squadre", JSON.stringify(nuoveSquadre));
     localStorage.setItem("fantai-acquisti", JSON.stringify(nuoviAcquisti));
 
@@ -241,16 +322,23 @@ export default function Home() {
   const resetAsta = () => {
     const conferma = window.confirm("Vuoi azzerare tutta l'asta?");
     if (!conferma) return;
-    const iniziali: Squadra[] = Array.from({ length: config.partecipanti }, (_, i) => ({
-      nome: `Squadra ${i + 1}`,
-      budget: config.budget,
-      giocatori: [],
-    }));
+    const iniziali: Squadra[] = legaScandicci
+      ? PROFILI_SCANDICCI.map((p) => ({
+          nome: p.nome,
+          budget: config.budget,
+          giocatori: [],
+        }))
+      : Array.from({ length: config.partecipanti }, (_, i) => ({
+          nome: `Squadra ${i + 1}`,
+          budget: config.budget,
+          giocatori: [],
+        }));
     setSquadre(iniziali);
     setAcquisti([]);
     setGiocatoreSelezionato(null);
     setPrezzo("");
     setMessaggio("");
+    setRuoliCompletati(new Set());
     localStorage.removeItem("fantai-squadre");
     localStorage.removeItem("fantai-acquisti");
     setSquadraAcquirente(iniziali[0]?.nome || "");
@@ -266,6 +354,33 @@ export default function Home() {
     }
   };
 
+  // Genera analisi del ruolo completato
+  const generaAnalisiRuolo = (ruolo: string, squadre: Squadra[], giocatori: Player[]): string => {
+    const ruoliMap: Record<string, string> = {
+      P: "Portieri",
+      D: "Difensori",
+      C: "Centrocampisti",
+      A: "Attaccanti",
+    };
+    const nomeRuolo = ruoliMap[ruolo] || ruolo;
+    let analisi = `Analisi ${nomeRuolo}:\n`;
+    for (const squadra of squadre) {
+      const giocatoriRuolo = squadra.giocatori.filter((g) => g.ruolo === ruolo);
+      if (giocatoriRuolo.length === 0) {
+        analisi += `• ${squadra.nome}: nessun ${nomeRuolo.toLowerCase()} acquistato (molto rischioso).\n`;
+        continue;
+      }
+      const fvmMedio = giocatoriRuolo.reduce((sum, g) => sum + (g.fvm || 0), 0) / giocatoriRuolo.length;
+      const nomi = giocatoriRuolo.map((g) => g.nome).join(", ");
+      let giudizio = "";
+      if (fvmMedio > 40) giudizio = "ottimo reparto";
+      else if (fvmMedio > 25) giudizio = "reparto solido";
+      else giudizio = "reparto debole";
+      analisi += `• ${squadra.nome}: ${nomi} (FVM medio: ${fvmMedio.toFixed(1)}). ${giudizio}.\n`;
+    }
+    return analisi;
+  };
+
   // ---------- RENDER ----------
 
   if (view === "asta") {
@@ -276,6 +391,20 @@ export default function Home() {
           <button onClick={() => setView("dashboard")} className="mb-6 text-gray-400 underline">
             ← Torna alla Dashboard
           </button>
+
+          {legaScandicci && (
+            <div className="rounded-2xl border border-blue-800 bg-blue-950/30 p-5 mb-6">
+              <h3 className="text-lg font-bold text-blue-300 mb-2">Profili Avversari (Scandicci League)</h3>
+              <div className="max-h-48 overflow-y-auto text-sm space-y-1">
+                {PROFILI_SCANDICCI.map((p) => (
+                  <div key={p.nome} className="flex justify-between">
+                    <span className="font-semibold">{p.nome}</span>
+                    <span className="text-gray-400">{p.stile}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Modifica nomi squadre */}
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
@@ -309,18 +438,31 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Ricerca giocatore */}
+          {/* Filtro ruolo e ricerca */}
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
             <h2 className="text-xl font-bold text-white mb-3">Cerca giocatore</h2>
-            <input
-              type="text"
-              placeholder="Nome giocatore..."
-              value={ricerca}
-              onChange={(e) => setRicerca(e.target.value)}
-              className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white"
-            />
-            <div className="mt-3 max-h-80 overflow-y-auto">
-              {giocatoriFiltrati.slice(0, 200).map((g, i) => (
+            <div className="flex gap-2 mb-3">
+              <select
+                value={filtroRuolo}
+                onChange={(e) => setFiltroRuolo(e.target.value)}
+                className="flex-1 rounded-xl border border-gray-700 bg-gray-800 p-2 text-white"
+              >
+                <option value="tutti">Tutti i ruoli</option>
+                <option value="P">Portieri</option>
+                <option value="D">Difensori</option>
+                <option value="C">Centrocampisti</option>
+                <option value="A">Attaccanti</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Nome..."
+                value={ricerca}
+                onChange={(e) => setRicerca(e.target.value)}
+                className="flex-1 rounded-xl border border-gray-700 bg-gray-800 p-2 text-white"
+              />
+            </div>
+            <div className="mt-3 max-h-96 overflow-y-auto">
+              {giocatoriFiltrati.map((g, i) => (
                 <button
                   key={`${g.nome}-${i}`}
                   onClick={() => setGiocatoreSelezionato(g)}
@@ -334,13 +476,28 @@ export default function Home() {
                 </button>
               ))}
               {giocatoriFiltrati.length === 0 && <p className="text-gray-500 text-sm">Nessun giocatore trovato.</p>}
-              {giocatoriFiltrati.length > 200 && (
-                <p className="text-xs text-gray-500">Mostrati i primi 200 risultati. Affina la ricerca.</p>
-              )}
             </div>
           </div>
 
-          {/* Dettaglio giocatore e registrazione */}
+          {/* Migliori per ruolo */}
+          {filtroRuolo !== "tutti" && (
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+              <h2 className="text-xl font-bold text-white mb-3">Migliori {filtroRuolo} disponibili (per FVM)</h2>
+              <div className="max-h-96 overflow-y-auto">
+                {giocatoriFiltrati
+                  .filter((g) => g.ruolo === filtroRuolo)
+                  .sort((a, b) => (b.fvm || 0) - (a.fvm || 0))
+                  .map((g, i) => (
+                    <div key={i} className="flex justify-between text-sm py-1">
+                      <span>{g.nome}</span>
+                      <span className="text-gray-400">{g.fvm || "-"}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dettaglio giocatore */}
           {giocatoreSelezionato && (
             <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
               <h2 className="text-xl font-bold text-white mb-2">{giocatoreSelezionato.nome}</h2>
@@ -349,7 +506,6 @@ export default function Home() {
                 {giocatoreSelezionato.fvm && ` • FVM: ${giocatoreSelezionato.fvm}`}
               </p>
 
-              {/* Suggerimenti algoritmo */}
               <div className="mb-4 grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-green-950 p-3 text-center">
                   <p className="text-xs text-green-400">Consigliato</p>
@@ -396,7 +552,7 @@ export default function Home() {
 
           {/* Messaggio */}
           {messaggio && (
-            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4">
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4 whitespace-pre-wrap">
               <p className="text-sm text-gray-300">{messaggio}</p>
             </div>
           )}
@@ -416,7 +572,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Reset */}
           <button
             onClick={resetAsta}
             className="mt-6 w-full rounded-xl border border-gray-700 bg-gray-800 px-6 py-3 font-semibold text-white"
@@ -465,6 +620,7 @@ export default function Home() {
               localStorage.removeItem("fantai-giocatori");
               localStorage.removeItem("fantai-squadre");
               localStorage.removeItem("fantai-acquisti");
+              localStorage.removeItem("fantai-lega-scandicci");
               window.location.reload();
             }}
             className="mt-3 w-full rounded-xl bg-gray-700 px-6 py-3 font-semibold text-white"
@@ -514,10 +670,29 @@ export default function Home() {
             <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
               <div className="mb-5 text-5xl">⚽</div>
               <h2 className="text-2xl font-bold">Benvenuto in FantAI</h2>
-              <p className="mt-4 text-gray-400">Configura la tua lega per preparare FantAI all'asta.</p>
-              <button onClick={vaiAvanti} className="mt-8 w-full rounded-xl bg-orange-600 px-6 py-4 text-lg font-bold active:scale-95">
-                Nuova Lega
-              </button>
+              <p className="mt-4 text-gray-400">Scegli il tipo di lega per iniziare.</p>
+              <div className="mt-8 space-y-3">
+                <button
+                  onClick={() => {
+                    setLegaScandicci(false);
+                    setConfig({ ...configIniziale, partecipanti: 8 });
+                    vaiAvanti();
+                  }}
+                  className="w-full rounded-xl bg-orange-600 px-6 py-4 text-lg font-bold active:scale-95"
+                >
+                  Nuova Lega
+                </button>
+                <button
+                  onClick={() => {
+                    setLegaScandicci(true);
+                    setConfig({ ...configIniziale, partecipanti: 10 });
+                    vaiAvanti();
+                  }}
+                  className="w-full rounded-xl bg-blue-600 px-6 py-4 text-lg font-bold active:scale-95"
+                >
+                  Scandicci League
+                </button>
+              </div>
             </div>
           </section>
         )}
