@@ -1,24 +1,22 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
 
-interface Giocatore {
+interface Player {
   nome: string;
-  squadra: string;
-  ruolo: string;
-  ruoloMantra: string;
-  quotazione: number | null;
-  quotazioneAttuale: number | null;
-  fvm: number | null;
+  ruolo?: string;
+  squadra?: string;
+  quotazione?: number;
+  [key: string]: unknown;
 }
 
 interface ImportListoneProps {
-  onImport?: (giocatori: Giocatore[]) => void;
+  onImport?: (players: Player[]) => void;
 }
 
-function normalizza(valore: unknown): string {
-  return String(valore ?? "")
+function normalizzaTesto(value: unknown): string {
+  return String(value ?? "")
     .trim()
     .toLowerCase()
     .normalize("NFD")
@@ -26,740 +24,776 @@ function normalizza(valore: unknown): string {
     .replace(/\s+/g, " ");
 }
 
-function testo(valore: unknown): string {
-  return String(valore ?? "").trim();
+function normalizzaChiave(value: unknown): string {
+  return normalizzaTesto(value)
+    .replace(/[^a-z0-9 ]/g, "")
+    .replace(/\s+/g, "");
 }
 
-function numero(valore: unknown): number | null {
-  if (valore === null || valore === undefined || valore === "") {
-    return null;
+function valoreCella(row: unknown[], index: number): string {
+  if (index < 0 || index >= row.length) {
+    return "";
   }
 
-  if (typeof valore === "number") {
-    return Number.isFinite(valore) ? valore : null;
-  }
-
-  let stringa = String(valore).trim();
-
-  stringa = stringa.replace(/[^\d,.-]/g, "");
-
-  if (stringa.includes(",") && stringa.includes(".")) {
-    if (stringa.lastIndexOf(",") > stringa.lastIndexOf(".")) {
-      stringa = stringa.replace(/\./g, "").replace(",", ".");
-    } else {
-      stringa = stringa.replace(/,/g, "");
-    }
-  } else {
-    stringa = stringa.replace(",", ".");
-  }
-
-  const risultato = Number(stringa);
-
-  return Number.isFinite(risultato) ? risultato : null;
+  return String(row[index] ?? "").trim();
 }
 
-function trovaColonna(
-  intestazioni: string[],
-  nomi: string[]
-): number {
-  const normalizzate = intestazioni.map(normalizza);
+/**
+ * Cerca la riga che contiene le vere intestazioni.
+ *
+ * Il listone può avere:
+ * riga 1 = titolo / informazioni
+ * riga 2 = intestazioni
+ * riga 3+ = giocatori
+ *
+ * Per questo controlliamo diverse righe invece di assumere
+ * che l'intestazione sia sempre la prima.
+ */
+function trovaRigaIntestazioni(rows: unknown[][]): number {
+  const paroleNome = [
+    "calciatore",
+    "calciatori",
+    "giocatore",
+    "giocatori",
+    "nome",
+    "nome giocatore",
+    "nome calciatore",
+    "cognome",
+    "player",
+    "players",
+    "footballer",
+  ];
 
-  for (const nome of nomi) {
-    const target = normalizza(nome);
+  const paroleRuolo = [
+    "ruolo",
+    "ruoli",
+    "role",
+    "posizione",
+    "position",
+  ];
 
-    const indice = normalizzate.findIndex(
-      (colonna) => colonna === target
-    );
+  const paroleSquadra = [
+    "squadra",
+    "club",
+    "team",
+    "societa",
+    "societa sportiva",
+  ];
 
-    if (indice !== -1) {
-      return indice;
+  let migliorIndice = 0;
+  let migliorPunteggio = -1;
+
+  const righeDaControllare = Math.min(rows.length, 15);
+
+  for (let r = 0; r < righeDaControllare; r++) {
+    const row = rows[r];
+
+    if (!row || row.length === 0) {
+      continue;
+    }
+
+    let punteggio = 0;
+
+    for (const cell of row) {
+      const valore = normalizzaTesto(cell);
+
+      if (!valore) {
+        continue;
+      }
+
+      if (paroleNome.includes(valore)) {
+        punteggio += 10;
+      }
+
+      if (paroleRuolo.includes(valore)) {
+        punteggio += 4;
+      }
+
+      if (paroleSquadra.includes(valore)) {
+        punteggio += 3;
+      }
+
+      if (
+        valore.includes("calciator") ||
+        valore.includes("giocator") ||
+        valore.includes("player")
+      ) {
+        punteggio += 8;
+      }
+
+      if (
+        valore.includes("ruolo") ||
+        valore.includes("position")
+      ) {
+        punteggio += 3;
+      }
+
+      if (
+        valore.includes("squadra") ||
+        valore.includes("team") ||
+        valore.includes("club")
+      ) {
+        punteggio += 2;
+      }
+    }
+
+    if (punteggio > migliorPunteggio) {
+      migliorPunteggio = punteggio;
+      migliorIndice = r;
     }
   }
 
-  for (const nome of nomi) {
-    const target = normalizza(nome);
+  return migliorPunteggio > 0 ? migliorIndice : 0;
+}
 
-    const indice = normalizzate.findIndex(
-      (colonna) =>
-        colonna.includes(target) ||
-        target.includes(colonna)
+/**
+ * Trova la colonna del nome.
+ *
+ * Non ci affidiamo a un solo nome preciso.
+ */
+function trovaColonnaNome(header: unknown[]): number {
+  const esatti = [
+    "calciatore",
+    "giocatore",
+    "nome",
+    "nome giocatore",
+    "nome calciatore",
+    "cognome",
+    "player",
+    "footballer",
+    "calciatori",
+    "giocatori",
+  ];
+
+  const normalizzati = header.map((h) => normalizzaTesto(h));
+
+  // 1. Ricerca esatta
+  for (const candidato of esatti) {
+    const index = normalizzati.findIndex(
+      (h) => h === candidato
     );
 
-    if (indice !== -1) {
-      return indice;
+    if (index !== -1) {
+      return index;
+    }
+  }
+
+  // 2. Ricerca parziale
+  for (let i = 0; i < normalizzati.length; i++) {
+    const h = normalizzati[i];
+
+    if (
+      h.includes("calciator") ||
+      h.includes("giocator") ||
+      h.includes("player") ||
+      h.includes("footballer")
+    ) {
+      return i;
+    }
+  }
+
+  // 3. Cerca colonne contenenti "nome"
+  for (let i = 0; i < normalizzati.length; i++) {
+    const h = normalizzati[i];
+
+    if (h === "nome" || h.startsWith("nome ")) {
+      return i;
+    }
+  }
+
+  // 4. Cerca "cognome"
+  for (let i = 0; i < normalizzati.length; i++) {
+    if (normalizzati[i].includes("cognome")) {
+      return i;
     }
   }
 
   return -1;
 }
 
-function trovaIntestazione(
-  righe: unknown[][]
-): {
-  indice: number;
-  colonne: string[];
-} | null {
-  let migliore: {
-    indice: number;
-    colonne: string[];
-    punteggio: number;
-  } | null = null;
+function trovaColonna(
+  header: unknown[],
+  parole: string[]
+): number {
+  const normalizzati = header.map((h) => normalizzaTesto(h));
 
-  const massimo = Math.min(righe.length, 50);
+  for (const parola of parole) {
+    const indice = normalizzati.findIndex(
+      (h) => h === normalizzaTesto(parola)
+    );
 
-  for (let r = 0; r < massimo; r++) {
-    const riga = righe[r];
-
-    if (!Array.isArray(riga)) {
-      continue;
+    if (indice !== -1) {
+      return indice;
     }
+  }
 
-    const colonne = riga.map((cella) => testo(cella));
-
-    let punteggio = 0;
-
-    for (const colonna of colonne) {
-      const c = normalizza(colonna);
-
+  for (let i = 0; i < normalizzati.length; i++) {
+    for (const parola of parole) {
       if (
-        c === "calciatore" ||
-        c === "giocatore" ||
-        c === "nome"
+        normalizzati[i].includes(normalizzaTesto(parola))
       ) {
-        punteggio += 10;
+        return i;
       }
+    }
+  }
 
-      if (
-        c === "sq" ||
-        c === "squadra" ||
-        c === "team"
-      ) {
-        punteggio += 5;
-      }
+  return -1;
+}
 
-      if (
-        c === "qi" ||
-        c === "quotazione iniziale"
-      ) {
-        punteggio += 5;
-      }
+/**
+ * Alcuni listoni hanno una colonna "Nome" e una "Cognome".
+ * Se esistono entrambe, le concateniamo.
+ */
+function trovaColonneNomeECognome(header: unknown[]) {
+  const normalizzati = header.map((h) => normalizzaTesto(h));
 
-      if (
-        c === "qa" ||
-        c === "quotazione attuale"
-      ) {
-        punteggio += 5;
-      }
+  let nome = -1;
+  let cognome = -1;
 
-      if (c === "fvm") {
-        punteggio += 5;
-      }
+  for (let i = 0; i < normalizzati.length; i++) {
+    const h = normalizzati[i];
 
-      if (
-        c === "ruolo" ||
-        c === "role" ||
-        c === "r"
-      ) {
-        punteggio += 4;
-      }
+    if (
+      nome === -1 &&
+      (h === "nome" ||
+        h === "nome giocatore" ||
+        h === "nome calciatore")
+    ) {
+      nome = i;
     }
 
     if (
-      migliore === null ||
-      punteggio > migliore.punteggio
+      cognome === -1 &&
+      h === "cognome"
     ) {
-      migliore = {
-        indice: r,
-        colonne,
-        punteggio,
-      };
+      cognome = i;
     }
   }
 
-  if (migliore === null) {
-    return null;
-  }
-
-  return {
-    indice: migliore.indice,
-    colonne: migliore.colonne,
-  };
+  return { nome, cognome };
 }
 
-function estraiDaFoglio(
-  foglio: XLSX.WorkSheet
-): Giocatore[] {
-  const righe = XLSX.utils.sheet_to_json<unknown[][]>(
-    foglio,
-    {
-      header: 1,
-      defval: "",
-      raw: true,
-    }
-  );
-
-  if (righe.length === 0) {
-    return [];
+function convertiNumero(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
   }
 
-  const informazioni = trovaIntestazione(righe);
-
-  if (informazioni === null) {
-    return [];
+  if (typeof value === "number") {
+    return value;
   }
 
-  const indiceIntestazione =
-    informazioni.indice;
+  const testo = String(value)
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
 
-  const colonne = informazioni.colonne;
+  const numero = Number(testo);
 
-  let indiceNome = trovaColonna(
-    colonne,
-    [
-      "Calciatore",
-      "Giocatore",
-      "Nome",
-      "Nome calciatore",
-      "Player",
-    ]
-  );
-
-  const indiceSquadra = trovaColonna(
-    colonne,
-    [
-      "Sq",
-      "Squadra",
-      "Team",
-      "Club",
-    ]
-  );
-
-  const indiceRuolo = trovaColonna(
-    colonne,
-    [
-      "Ruolo",
-      "Role",
-      "R",
-    ]
-  );
-
-  const indiceQI = trovaColonna(
-    colonne,
-    [
-      "QI",
-      "Quotazione iniziale",
-    ]
-  );
-
-  const indiceQA = trovaColonna(
-    colonne,
-    [
-      "QA",
-      "Quotazione attuale",
-    ]
-  );
-
-  const indiceFVM = trovaColonna(
-    colonne,
-    [
-      "FVM",
-      "FVM / 1000",
-      "Fantavalore di mercato",
-      "Fantavalore",
-    ]
-  );
-
-  /*
-   * Se la colonna nome non viene trovata,
-   * cerchiamo automaticamente la prima colonna
-   * che contiene valori testuali compatibili
-   * con nomi di calciatori.
-   */
-  if (indiceNome === -1) {
-    let migliorIndice = -1;
-    let migliorPunteggio = 0;
-
-    const numeroColonne = colonne.length;
-
-    for (let c = 0; c < numeroColonne; c++) {
-      let punteggio = 0;
-
-      for (
-        let r = indiceIntestazione + 1;
-        r < Math.min(righe.length, indiceIntestazione + 100);
-        r++
-      ) {
-        const valore = testo(righe[r]?.[c]);
-
-        if (
-          valore.length >= 3 &&
-          valore.length <= 50 &&
-          /[A-Za-zÀ-ÿ]/.test(valore)
-        ) {
-          if (
-            !/^\d+$/.test(valore) &&
-            !/^(sq|qi|qa|fvm)$/i.test(valore)
-          ) {
-            punteggio++;
-          }
-        }
-      }
-
-      if (punteggio > migliorPunteggio) {
-        migliorPunteggio = punteggio;
-        migliorIndice = c;
-      }
-    }
-
-    indiceNome = migliorIndice;
-  }
-
-  if (indiceNome === -1) {
-    return [];
-  }
-
-  const giocatori: Giocatore[] = [];
-
-  for (
-    let r = indiceIntestazione + 1;
-    r < righe.length;
-    r++
-  ) {
-    const riga = righe[r];
-
-    if (!Array.isArray(riga)) {
-      continue;
-    }
-
-    const nome = testo(riga[indiceNome]);
-
-    if (!nome) {
-      continue;
-    }
-
-    const nomeNorm = normalizza(nome);
-
-    const valoriNonGiocatore = [
-      "calciatore",
-      "giocatore",
-      "nome",
-      "totale",
-      "media",
-      "quotazione",
-      "fvm",
-      "fantavalore",
-      "squadra",
-      "team",
-    ];
-
-    if (valoriNonGiocatore.includes(nomeNorm)) {
-      continue;
-    }
-
-    const squadra =
-      indiceSquadra !== -1
-        ? testo(riga[indiceSquadra])
-        : "";
-
-    const ruolo =
-      indiceRuolo !== -1
-        ? testo(riga[indiceRuolo])
-        : "";
-
-    const quotazione =
-      indiceQI !== -1
-        ? numero(riga[indiceQI])
-        : null;
-
-    const quotazioneAttuale =
-      indiceQA !== -1
-        ? numero(riga[indiceQA])
-        : null;
-
-    const fvm =
-      indiceFVM !== -1
-        ? numero(riga[indiceFVM])
-        : null;
-
-    /*
-     * Alcune versioni del listone possono avere
-     * una struttura con più colonne ruolo/quotazioni.
-     * Non scartiamo il giocatore se alcune informazioni
-     * sono mancanti.
-     */
-    const haInformazioniUtili =
-      squadra !== "" ||
-      ruolo !== "" ||
-      quotazione !== null ||
-      quotazioneAttuale !== null ||
-      fvm !== null;
-
-    if (!haInformazioniUtili) {
-      continue;
-    }
-
-    giocatori.push({
-      nome,
-      squadra,
-      ruolo,
-      ruoloMantra: "",
-      quotazione,
-      quotazioneAttuale,
-      fvm,
-    });
-  }
-
-  return giocatori;
-}
-
-function ordinaGiocatori(
-  giocatori: Giocatore[]
-): Giocatore[] {
-  return [...giocatori].sort((a, b) =>
-    a.nome.localeCompare(
-      b.nome,
-      "it"
-    )
-  );
+  return Number.isFinite(numero) ? numero : undefined;
 }
 
 export default function ImportListone({
   onImport,
 }: ImportListoneProps) {
-  const [giocatori, setGiocatori] =
-    useState<Giocatore[]>([]);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errore, setErrore] = useState("");
+  const [nomeFile, setNomeFile] = useState("");
+  const [info, setInfo] = useState("");
 
-  const [nomeFile, setNomeFile] =
-    useState("");
-
-  const [errore, setErrore] =
-    useState("");
-
-  const [caricamento, setCaricamento] =
-    useState(false);
-
-  const [foglioUsato, setFoglioUsato] =
-    useState("");
-
-  const gestisciFile = async (
-    evento: ChangeEvent<HTMLInputElement>
+  const analizzaFile = async (
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const file =
-      evento.target.files?.[0];
+    const file = event.target.files?.[0];
 
     if (!file) {
       return;
     }
 
-    setNomeFile(file.name);
+    setLoading(true);
     setErrore("");
-    setGiocatori([]);
-    setFoglioUsato("");
-    setCaricamento(true);
+    setInfo("");
+    setPlayers([]);
+    setNomeFile(file.name);
 
     try {
-      const buffer =
-        await file.arrayBuffer();
+      const buffer = await file.arrayBuffer();
 
-      const workbook =
-        XLSX.read(buffer, {
-          type: "array",
-          cellDates: true,
-        });
+      const workbook = XLSX.read(buffer, {
+        type: "array",
+        cellDates: true,
+      });
 
-      if (
-        !workbook.SheetNames ||
-        workbook.SheetNames.length === 0
-      ) {
+      if (!workbook.SheetNames.length) {
         throw new Error(
-          "Il file non contiene fogli leggibili."
+          "Il file Excel non contiene nessun foglio."
         );
       }
 
-      let migliorRisultato: Giocatore[] = [];
-      let migliorFoglio = "";
+      /*
+       * PRIORITÀ:
+       * 1. foglio "Tutti"
+       * 2. primo foglio disponibile
+       */
+      let nomeFoglio = workbook.SheetNames.find(
+        (nome) =>
+          normalizzaTesto(nome) === "tutti"
+      );
+
+      if (!nomeFoglio) {
+        nomeFoglio = workbook.SheetNames[0];
+      }
+
+      const worksheet = workbook.Sheets[nomeFoglio];
+
+      if (!worksheet) {
+        throw new Error(
+          "Non riesco ad aprire il foglio del listone."
+        );
+      }
+
+      /*
+       * header: 1
+       * ci permette di leggere tutte le righe come array.
+       *
+       * È fondamentale perché le intestazioni del listone
+       * possono iniziare dalla seconda riga.
+       */
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(
+        worksheet,
+        {
+          header: 1,
+          defval: "",
+          raw: false,
+        }
+      );
+
+      if (!rows.length) {
+        throw new Error(
+          "Il foglio selezionato è vuoto."
+        );
+      }
+
+      const indiceHeader =
+        trovaRigaIntestazioni(rows);
+
+      const header = rows[indiceHeader] ?? [];
+
+      /*
+       * Prima proviamo il caso standard:
+       * una singola colonna Calciatore/Giocatore/Nome.
+       */
+      let indiceNome =
+        trovaColonnaNome(header);
+
+      /*
+       * Poi controlliamo il caso:
+       * Nome + Cognome separati.
+       */
+      const colonneNomeCognome =
+        trovaColonneNomeECognome(header);
+
+      /*
+       * Se abbiamo Nome + Cognome ma non abbiamo
+       * una colonna Calciatore, useremo quelle due.
+       */
+      const usaNomeECognome =
+        indiceNome === -1 &&
+        colonneNomeCognome.nome !== -1 &&
+        colonneNomeCognome.cognome !== -1;
+
+      if (indiceNome === -1 && !usaNomeECognome) {
+        /*
+         * FALLBACK INTELLIGENTE
+         *
+         * Cerchiamo tra le colonne quella che contiene
+         * prevalentemente valori testuali simili a nomi.
+         */
+        let migliore = -1;
+        let migliorPunteggio = 0;
+
+        const numeroRighe =
+          Math.min(rows.length, indiceHeader + 101);
+
+        for (
+          let colonna = 0;
+          colonna < header.length;
+          colonna++
+        ) {
+          let punteggio = 0;
+
+          for (
+            let r = indiceHeader + 1;
+            r < numeroRighe;
+            r++
+          ) {
+            const valore =
+              valoreCella(rows[r], colonna);
+
+            if (!valore) {
+              continue;
+            }
+
+            /*
+             * Un nome normalmente:
+             * - è testo
+             * - non è un numero puro
+             * - non è troppo lungo
+             */
+            if (
+              valore.length >= 2 &&
+              valore.length <= 60 &&
+              !/^\d+$/.test(valore)
+            ) {
+              punteggio++;
+            }
+          }
+
+          if (punteggio > migliorPunteggio) {
+            migliorPunteggio = punteggio;
+            migliore = colonna;
+          }
+        }
+
+        if (
+          migliore !== -1 &&
+          migliorPunteggio >= 2
+        ) {
+          indiceNome = migliore;
+        }
+      }
+
+      if (indiceNome === -1 && !usaNomeECognome) {
+        const intestazioniVisibili =
+          header
+            .map((h) => String(h ?? "").trim())
+            .filter(Boolean)
+            .join(" | ");
+
+        throw new Error(
+          `Non riesco a individuare la colonna del nome del giocatore. ` +
+          `Riga intestazioni individuata: ${indiceHeader + 1}. ` +
+          `Colonne trovate: ${intestazioniVisibili || "nessuna"}`
+        );
+      }
+
+      /*
+       * Individuazione delle altre colonne.
+       */
+      const indiceRuolo = trovaColonna(
+        header,
+        [
+          "ruolo",
+          "ruoli",
+          "posizione",
+          "position",
+          "role",
+        ]
+      );
+
+      const indiceSquadra = trovaColonna(
+        header,
+        [
+          "squadra",
+          "club",
+          "team",
+          "società",
+          "societa",
+        ]
+      );
+
+      const indiceQuotazione = trovaColonna(
+        header,
+        [
+          "quotazione",
+          "quotazione iniziale",
+          "quotazione fantacalcio",
+          "prezzo",
+          "valore",
+          "quot",
+          "qt",
+        ]
+      );
+
+      const risultato: Player[] = [];
 
       for (
-        const nomeFoglio
-        of workbook.SheetNames
+        let r = indiceHeader + 1;
+        r < rows.length;
+        r++
       ) {
-        const foglio =
-          workbook.Sheets[nomeFoglio];
+        const row = rows[r];
 
-        if (!foglio) {
+        if (!row || row.length === 0) {
           continue;
         }
 
-        const risultato =
-          estraiDaFoglio(foglio);
+        let nome = "";
+
+        if (usaNomeECognome) {
+          const nomeParte = valoreCella(
+            row,
+            colonneNomeCognome.nome
+          );
+
+          const cognomeParte = valoreCella(
+            row,
+            colonneNomeCognome.cognome
+          );
+
+          nome =
+            `${nomeParte} ${cognomeParte}`.trim();
+        } else {
+          nome = valoreCella(row, indiceNome);
+        }
+
+        /*
+         * Scartiamo:
+         * - righe completamente vuote
+         * - righe che sembrano intestazioni ripetute
+         */
+        if (!nome) {
+          continue;
+        }
+
+        const nomeNormalizzato =
+          normalizzaChiave(nome);
 
         if (
-          risultato.length >
-          migliorRisultato.length
+          nomeNormalizzato === "calciatore" ||
+          nomeNormalizzato === "giocatore" ||
+          nomeNormalizzato === "nome" ||
+          nomeNormalizzato === "player"
         ) {
-          migliorRisultato =
-            risultato;
-
-          migliorFoglio =
-            nomeFoglio;
+          continue;
         }
+
+        const player: Player = {
+          nome,
+        };
+
+        if (indiceRuolo !== -1) {
+          const ruolo = valoreCella(
+            row,
+            indiceRuolo
+          );
+
+          if (ruolo) {
+            player.ruolo = ruolo;
+          }
+        }
+
+        if (indiceSquadra !== -1) {
+          const squadra = valoreCella(
+            row,
+            indiceSquadra
+          );
+
+          if (squadra) {
+            player.squadra = squadra;
+          }
+        }
+
+        if (indiceQuotazione !== -1) {
+          const quotazione = convertiNumero(
+            valoreCella(row, indiceQuotazione)
+          );
+
+          if (quotazione !== undefined) {
+            player.quotazione = quotazione;
+          }
+        }
+
+        /*
+         * Salviamo anche tutte le colonne originali.
+         * Questo sarà molto utile più avanti per
+         * l'algoritmo FantAlgoritmo.
+         */
+        for (
+          let c = 0;
+          c < header.length;
+          c++
+        ) {
+          const nomeColonna =
+            String(header[c] ?? "").trim();
+
+          if (!nomeColonna) {
+            continue;
+          }
+
+          const chiave =
+            normalizzaChiave(nomeColonna);
+
+          if (!chiave) {
+            continue;
+          }
+
+          player[chiave] =
+            row[c] ?? "";
+        }
+
+        risultato.push(player);
       }
 
-      if (
-        migliorRisultato.length === 0
-      ) {
+      if (!risultato.length) {
         throw new Error(
-          "Non sono riuscito a riconoscere i calciatori nel listone. Il file è stato aperto correttamente, ma la struttura delle righe non è stata riconosciuta."
+          "Ho trovato la struttura del foglio, ma non ho trovato nessun giocatore."
         );
       }
 
-      const ordinati =
-        ordinaGiocatori(
-          migliorRisultato
-        );
+      setPlayers(risultato);
 
-      setGiocatori(ordinati);
-      setFoglioUsato(migliorFoglio);
-
-      if (onImport) {
-        onImport(ordinati);
-      }
-    } catch (error) {
-      console.error(
-        "Errore importazione:",
-        error
+      setInfo(
+        `Importati ${risultato.length} giocatori ` +
+        `dal foglio "${nomeFoglio}". ` +
+        `Intestazioni alla riga ${indiceHeader + 1}.`
       );
 
-      if (
-        error instanceof Error
-      ) {
-        setErrore(error.message);
-      } else {
-        setErrore(
-          "Errore durante la lettura del file."
-        );
+      if (onImport) {
+        onImport(risultato);
       }
+    } catch (error) {
+      console.error(error);
+
+      const messaggio =
+        error instanceof Error
+          ? error.message
+          : "Errore durante l'importazione del file.";
+
+      setErrore(messaggio);
     } finally {
-      setCaricamento(false);
+      setLoading(false);
 
       /*
-       * Permette di selezionare nuovamente
-       * lo stesso file dopo un errore.
+       * Permette di selezionare nuovamente lo stesso file
+       * anche dopo un errore.
        */
-      evento.target.value = "";
+      event.target.value = "";
     }
   };
 
   return (
-    <div className="w-full">
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
-
+    <div className="w-full space-y-6">
+      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
         <h2 className="mb-2 text-2xl font-bold text-white">
-          Importa Listone
+          Importa listone
         </h2>
 
         <p className="mb-6 text-sm leading-6 text-gray-400">
-          Carica il listone ufficiale
-          Fantacalcio in formato Excel
-          oppure CSV. FantAI analizzerà
-          automaticamente le colonne
-          disponibili.
+          Carica il file Excel o CSV del listone.
+          FantAI analizzerà automaticamente la struttura
+          del foglio e individuerà i giocatori.
         </p>
 
-        <label className="block cursor-pointer">
-          <div className="rounded-2xl border-2 border-dashed border-gray-700 bg-gray-800 p-7 text-center transition active:scale-[0.99]">
-
-            <div className="mb-3 text-4xl">
-              📄
-            </div>
-
-            <div className="text-lg font-bold text-white">
-              {caricamento
-                ? "Analisi del listone..."
-                : "Seleziona il listone"}
-            </div>
-
-            <div className="mt-2 text-xs text-gray-400">
-              XLSX, XLS o CSV
-            </div>
-
-          </div>
-
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={gestisciFile}
-            disabled={caricamento}
-            className="hidden"
-          />
+        <label
+          htmlFor="file-listone"
+          className="block w-full cursor-pointer rounded-xl bg-orange-600 px-6 py-4 text-center font-semibold text-white transition active:scale-95 hover:bg-orange-500"
+        >
+          {loading
+            ? "Analisi del file..."
+            : "Seleziona file Excel / CSV"}
         </label>
 
-        {nomeFile !== "" && (
-          <div className="mt-4 rounded-xl border border-gray-800 bg-gray-950 p-4">
+        <input
+          id="file-listone"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          onChange={analizzaFile}
+          disabled={loading}
+          className="hidden"
+        />
 
-            <p className="text-xs text-gray-500">
-              File selezionato
-            </p>
-
-            <p className="mt-1 break-all font-semibold text-white">
+        {nomeFile && (
+          <p className="mt-4 text-center text-sm text-gray-400">
+            File:{" "}
+            <span className="font-semibold text-white">
               {nomeFile}
-            </p>
-
-          </div>
+            </span>
+          </p>
         )}
-
-        {caricamento && (
-          <div className="mt-5 rounded-xl border border-orange-800 bg-orange-950/30 p-4">
-
-            <p className="font-semibold text-orange-400">
-              Sto analizzando il file...
-            </p>
-
-            <p className="mt-1 text-sm text-orange-300">
-              Non chiudere questa pagina.
-            </p>
-
-          </div>
-        )}
-
-        {errore !== "" && (
-          <div className="mt-5 rounded-xl border border-red-800 bg-red-950/40 p-4">
-
-            <p className="font-bold text-red-400">
-              Importazione non riuscita
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-red-300">
-              {errore}
-            </p>
-
-          </div>
-        )}
-
-        {giocatori.length > 0 && (
-          <div className="mt-6">
-
-            <div className="rounded-xl border border-green-800 bg-green-950/30 p-4">
-
-              <p className="font-bold text-green-400">
-                Listone importato correttamente
-              </p>
-
-              <p className="mt-1 text-sm text-green-300">
-                Trovati{" "}
-                <strong>
-                  {giocatori.length}
-                </strong>{" "}
-                calciatori.
-              </p>
-
-              {foglioUsato !== "" && (
-                <p className="mt-1 text-xs text-green-400/70">
-                  Foglio utilizzato:{" "}
-                  {foglioUsato}
-                </p>
-              )}
-
-            </div>
-
-            <div className="mt-5 overflow-hidden rounded-xl border border-gray-800">
-
-              <div className="max-h-[420px] overflow-auto">
-
-                <table className="w-full min-w-[650px] text-left text-sm">
-
-                  <thead className="sticky top-0 z-10 bg-gray-800 text-gray-300">
-
-                    <tr>
-                      <th className="px-3 py-3">
-                        Calciatore
-                      </th>
-
-                      <th className="px-3 py-3">
-                        Sq
-                      </th>
-
-                      <th className="px-3 py-3">
-                        Ruolo
-                      </th>
-
-                      <th className="px-3 py-3">
-                        QI
-                      </th>
-
-                      <th className="px-3 py-3">
-                        QA
-                      </th>
-
-                      <th className="px-3 py-3">
-                        FVM
-                      </th>
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {giocatori
-                      .slice(0, 100)
-                      .map(
-                        (
-                          giocatore,
-                          indice
-                        ) => (
-                          <tr
-                            key={`${giocatore.nome}-${giocatore.squadra}-${indice}`}
-                            className="border-t border-gray-800"
-                          >
-
-                            <td className="px-3 py-3 font-semibold text-white">
-                              {giocatore.nome}
-                            </td>
-
-                            <td className="px-3 py-3 text-gray-300">
-                              {giocatore.squadra || "-"}
-                            </td>
-
-                            <td className="px-3 py-3 text-gray-300">
-                              {giocatore.ruolo || "-"}
-                            </td>
-
-                            <td className="px-3 py-3 text-gray-300">
-                              {giocatore.quotazione ?? "-"}
-                            </td>
-
-                            <td className="px-3 py-3 text-gray-300">
-                              {giocatore.quotazioneAttuale ?? "-"}
-                            </td>
-
-                            <td className="px-3 py-3 text-gray-300">
-                              {giocatore.fvm ?? "-"}
-                            </td>
-
-                          </tr>
-                        )
-                      )}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            </div>
-
-            {giocatori.length > 100 && (
-              <p className="mt-3 text-center text-xs text-gray-500">
-                Mostrati i primi 100
-                calciatori su{" "}
-                {giocatori.length}.
-              </p>
-            )}
-
-          </div>
-        )}
-
       </div>
+
+      {errore && (
+        <div className="rounded-2xl border border-red-800 bg-red-950/40 p-5">
+          <h3 className="mb-2 font-bold text-red-400">
+            Errore
+          </h3>
+
+          <p className="text-sm leading-6 text-red-200">
+            {errore}
+          </p>
+        </div>
+      )}
+
+      {info && !errore && (
+        <div className="rounded-2xl border border-green-800 bg-green-950/30 p-5">
+          <h3 className="mb-2 font-bold text-green-400">
+            Importazione completata
+          </h3>
+
+          <p className="text-sm leading-6 text-green-200">
+            {info}
+          </p>
+        </div>
+      )}
+
+      {players.length > 0 && (
+        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-white">
+              Anteprima giocatori
+            </h3>
+
+            <span className="rounded-full bg-green-600/20 px-3 py-1 text-xs font-bold text-green-400">
+              {players.length}
+            </span>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto">
+            <div className="space-y-2">
+              {players
+                .slice(0, 50)
+                .map((player, index) => (
+                  <div
+                    key={`${player.nome}-${index}`}
+                    className="flex items-center justify-between rounded-lg bg-gray-800 px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-white">
+                        {player.nome}
+                      </p>
+
+                      {(player.ruolo ||
+                        player.squadra) && (
+                        <p className="text-xs text-gray-400">
+                          {player.ruolo ?? ""}
+                          {player.ruolo &&
+                          player.squadra
+                            ? " • "
+                            : ""}
+                          {player.squadra ?? ""}
+                        </p>
+                      )}
+                    </div>
+
+                    {player.quotazione !==
+                      undefined && (
+                      <span className="text-sm font-bold text-orange-400">
+                        {player.quotazione}
+                      </span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          {players.length > 50 && (
+            <p className="mt-4 text-center text-xs text-gray-500">
+              Mostrati i primi 50 giocatori su{" "}
+              {players.length}.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
