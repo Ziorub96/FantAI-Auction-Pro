@@ -1,309 +1,883 @@
-// Prezzi medi storici delle aste 2025/26 (Scandicci League e altre)
-// I nomi sono normalizzati: minuscolo, senza accenti.
-export const PREZZI_STORICI: Record<string, number> = {
-  // Portieri
-  "svilar": 55,
-  "maignan": 48,
-  "de gea": 35,
-  "meret": 38,
-  "carnesecchi": 44,
-  "vicario": 50,
-  "butez": 35,
-  "skorupski": 16,
-  "falcone": 8,
-  "okoye": 12,
-  "mandas": 15,
-  "caprile": 10,
-  "provedel": 10,
-  "martinez jo.": 45,
-  "milinkovic-savic v.": 20,
-  "sommer": 46,
-  "di gregorio": 20,
-  "suzuki": 10,
-  "gollini": 2,
-  "terracciano": 2,
-  "torriani": 1,
-  "stankovic f.": 2,
-  "muric": 2,
-  "sportiello": 2,
-  "perin": 1,
-  "pinsoglio": 1,
-  "tornqvist": 1,
-  "vigorito": 1,
-  "corvi": 2,
-  "bijlow": 5,
-  "paleari": 1,
-  "grabara": 1,
-  "mascardi": 1,
-  "radunovic": 1,
-  "pessina mas.": 1,
-  "contini": 1,
-  "daffara": 1,
-  "thiam": 1,
-  "vismara": 1,
-  "christensen o.": 1,
-  "motta": 1,
-  "furlanetto": 1,
-  "martinelli t.": 1,
-  "leali": 1,
-  "audero": 1,
-  "semper": 1,
-  "israel": 6,
+"use client";
 
-  // Difensori
-  "wesley": 45,
-  "bastoni": 30,
-  "dimarco": 65,
-  "akanji": 28,
-  "solet": 25,
-  "mancini": 18,
-  "kalulu": 18,
-  "chalobah t.": 15,
-  "bremer": 28,
-  "pavlovic": 20,
-  "rahmani": 20,
-  "di lorenzo": 20,
-  "cambiaso": 20,
-  "dumfries": 25,
-  "spinazzola": 15,
-  "zappacosta": 10,
-  "dodò": 20,
-  "marusic": 2,
-  "gila": 8,
-  "bertola": 5,
-  "valle": 3,
-  "luperto": 5,
-  "n'dicka": 15,
-  "hien": 8,
-  "romagnoli": 6,
-  "scalvini": 10,
-  "floriani mussolini": 1,
-  "gaspar k.": 2,
-  "carlos augusto": 5,
-  "buongiorno": 12,
-  "doig": 1,
-  "zanoli": 1,
-  "gosens": 20,
-  "hermoso": 6,
-  "tomori": 6,
-  "zortea": 10,
-  "tavares n.": 12,
-  "norton-cuffy": 3,
-  "gabbia": 5,
-  "estupinan": 9,
-  "vojvoda": 6,
-  "valeri": 6,
-  "mina": 5,
-  "angelino": 18,
-  "vasquez": 8,
-  "jimenez": 15,
-  "celik": 12,
-  "chalobah": 15,
-  "idzes": 2,
-  "del prato": 6,
-  "pavard": 1,
-  "kabasele": 2,
-  "koulierakis": 9,
-  "dragusin": 12,
-  "couto": 13,
-  "kempf": 2,
-  "ramon": 15,
-  "bisseck": 12,
-  "tiago gabriel": 2,
-  "rodriguez ju.": 4,
-  "viery": 3,
-  "obert": 2,
-  "birindelli": 2,
-  "lucumi": 5,
-  "mitaj": 4,
-  "olivera": 3,
-  "hainaut": 3,
-  "doekhi": 5,
-  "bernasconi": 8,
-  "kelly l.": 3,
-  "bracaglia": 1,
-  "monterisi": 2,
-  "ghilardi": 4,
-  "spence": 21,
-  "bartesaghi": 10,
-  "marcandalli": 6,
-  "coco": 3,
-  "valdepenas": 8,
-  "mangas": 3,
-  "gallo": 2,
-  "comuzzo": 3,
-  "sutalo j.": 1,
-  "puczka": 1,
-  "odenthal": 1,
-  "heggem": 3,
-  "smolcic i.": 1,
-  "calvani": 2,
-  "cittadini": 3,
-  "bella-kotchap": 3,
-  "siebert": 1,
-  "rensch": 3,
-  "kolasinac": 1,
-  "parisi": 3,
+import { useState, useEffect, useMemo } from "react";
+import ImportListone from "@/components/ImportListone";
+import { PREZZI_STORICI } from "@/data/prezziStorici";
 
-  // Centrocampisti
-  "baturina": 50,
-  "pulisic": 85,
-  "calhanoglu": 85,
-  "mctominay": 80,
-  "orsolini": 75,
-  "zielinski": 38,
-  "rabiot": 45,
-  "barella": 38,
-  "zaccagni": 55,
-  "paz n.": 90,
-  "da cunha": 35,
-  "frattesi": 45,
-  "mastantuono": 45,
-  "alajbegovic": 40,
-  "attar": 40,
-  "casadei": 12,
-  "modric": 20,
-  "locatelli": 6,
-  "fagioli": 3,
-  "lobotka": 2,
-  "cambiaghi": 3,
-  "pisilli": 2,
-  "sucic p.": 10,
-  "zaniolo": 50,
-  "mckennie": 40,
-  "zalewski": 8,
-  "rowe": 30,
-  "vlasic": 30,
-  "gudmundsson a.": 40,
-  "ederson d.s.": 18,
-  "kone m.": 20,
-  "samardzic": 30,
-  "de bruyne": 60,
-  "de roon": 1,
-  "freuler": 1,
-  "elmas": 1,
-  "gaetano": 6,
-  "adli": 3,
-  "carboni v.": 13,
-  "pierotti": 1,
-  "fabian": 1,
-  "venturino": 1,
-  "nicolussi caviglia": 1,
-  "mandragora": 5,
-  "guendouzi": 9,
-  "dele-bashiru": 10,
-  "stanciu": 17,
-  "mkhitaryan": 15,
-  "odgaard": 39,
-  "lovic": 1,
-  "isaksen": 15,
-  "politano": 25,
-  "colpani": 5,
-  "frendrup": 1,
-  "fazzini": 5,
-  "ricci s.": 1,
-  "adopo": 1,
-  "karlstrom": 1,
-  "taylor k.": 20,
-  "busio": 10,
-  "diouf": 20,
-  "adzic": 10,
-  "schmid": 15,
-  "unai gomez": 15,
-  "pasalic": 10,
-  "douglas luiz": 6,
-  "zambo anguissa": 15,
-  "saelemaekers": 15,
-  "oristanio": 5,
-  "thorstvedt": 10,
-  "rodriguez je.": 8,
-  "bernardeschi": 10,
-  "chukuweze": 10,
-  "ndour": 8,
-  "loftus-cheek": 15,
-  "pellegrini lo.": 8,
-  "baldanzi": 8,
-  "moreira": 20,
-  "vergara": 12,
-  "cacciamani": 2,
-  "liberali": 3,
-  "sow": 5,
-  "basic": 1,
-  "keita m.": 1,
-  "winks": 1,
-  "njie": 3,
-  "romano": 1,
-  "gilmour": 1,
-  "ferguson": 2,
-  "pessina": 2,
-  "perrone": 5,
-  "gandelman": 1,
-  "coulibaly l.": 3,
-  "el aynaoui": 5,
-  "cristante": 2,
+// ---------- TIPI ----------
+interface LegaConfig {
+  partecipanti: number;
+  budget: number;
+  modalita: "classic" | "mantra";
+  rosa: {
+    portieri: number;
+    difensori: number;
+    centrocampisti: number;
+    attaccanti: number;
+  };
+  regole: {
+    modificatoreDifesa: boolean;
+    imbattibilita: boolean;
+    portaInviolata: boolean;
+    assist: boolean;
+    rigori: boolean;
+  };
+  ordineAsta: "random" | "libera" | "manuale";
+}
 
-  // Attaccanti
-  "martinez l.": 170,
-  "kolo muani": 150,
-  "ramos g.": 165,
-  "kean": 110,
-  "hojlund": 130,
-  "thuram": 130,
-  "yildiz": 100,
-  "marlen": 190,
-  "leao": 110,
-  "dovbyk": 55,
-  "scamacca": 65,
-  "soulé": 50,
-  "dybala": 60,
-  "krstovic": 50,
-  "david": 90,
-  "castro s.": 45,
-  "raspadori": 25,
-  "pellegrino m.": 35,
-  "pinamonti": 45,
-  "simeone": 50,
-  "berardi": 45,
-  "nkunku": 50,
-  "doucikas": 70,
-  "de ketelaere": 60,
-  "colombo": 20,
-  "adams c.": 10,
-  "lucca": 8,
-  "espirito f.p.": 55,
-  "espirito se.": 15,
-  "bonny": 10,
-  "bowie": 8,
-  "cutrone": 5,
-  "vitinha o.": 5,
-  "lang": 5,
-  "mota": 1,
-  "ekhator": 1,
-  "vaz": 1,
-  "stulic": 3,
-  "orban g.": 3,
-  "camarda": 2,
-  "zapata d.": 15,
-  "lookman": 26,
-  "ngonge": 17,
-  "belotti": 25,
-  "ferguson e.": 118,
-  "gimenez": 79,
-  "vardy": 31,
-  "dzeko": 1,
-  "noslin": 1,
-  "raimondo": 4,
-  "boga": 8,
-  "santos a.": 40,
-  "geubbels": 15,
-  "toure e.": 10,
-  "yeboah j.": 10,
-  "kvernadze": 5,
-  "ghedjemis": 5,
-  "romero d.": 5,
-  "sulemana k.": 4,
-  "mendy p.": 3,
-  "maldini": 1,
+interface Player {
+  nome: string;
+  ruolo?: string;
+  squadra?: string;
+  quotazioneIniziale?: number;
+  quotazioneAttuale?: number;
+  fvm?: number;
+  prezzoPagato?: number;
+  [key: string]: unknown;
+}
+
+interface Squadra {
+  nome: string;
+  budget: number;
+  giocatori: Player[];
+}
+
+interface Acquisto {
+  giocatore: string;
+  squadra: string;
+  prezzo: number;
+  timestamp: string;
+}
+
+interface ProfiloStorico {
+  nome: string;
+  distribuzione: { P: number; D: number; C: number; A: number };
+  stile: string;
+  topPagati: number;
+  lowCost: number;
+}
+
+// ---------- PROFILI SCANDICCI ----------
+const PROFILI_SCANDICCI: ProfiloStorico[] = [
+  { nome: "Jonny", distribuzione: { P: 10, D: 11, C: 5, A: 71 }, stile: "Cacciatore di top", topPagati: 4, lowCost: 10 },
+  { nome: "Sina", distribuzione: { P: 9, D: 3, C: 15, A: 72 }, stile: "Attacco pesante", topPagati: 3, lowCost: 8 },
+  { nome: "Tofa", distribuzione: { P: 2, D: 8, C: 32, A: 58 }, stile: "Azzardatore", topPagati: 3, lowCost: 6 },
+  { nome: "Auri", distribuzione: { P: 10, D: 10, C: 29, A: 42 }, stile: "Scout paziente", topPagati: 3, lowCost: 9 },
+  { nome: "Gabb", distribuzione: { P: 10, D: 10, C: 20, A: 51 }, stile: "Power player", topPagati: 3, lowCost: 7 },
+  { nome: "Lollo", distribuzione: { P: 10, D: 12, C: 20, A: 56 }, stile: "Contrasto", topPagati: 3, lowCost: 7 },
+  { nome: "Rub+Gian", distribuzione: { P: 7, D: 9, C: 33, A: 51 }, stile: "Costruttore di giovani", topPagati: 3, lowCost: 5 },
+  { nome: "Nicco", distribuzione: { P: 6, D: 14, C: 36, A: 44 }, stile: "Centrocampista", topPagati: 3, lowCost: 6 },
+  { nome: "Faila+Papu", distribuzione: { P: 6, D: 7, C: 35, A: 46 }, stile: "Duello interno", topPagati: 3, lowCost: 9 },
+  { nome: "Toniesi", distribuzione: { P: 6, D: 8, C: 21, A: 63 }, stile: "Tradizionalista", topPagati: 3, lowCost: 7 },
+];
+
+const configIniziale: LegaConfig = {
+  partecipanti: 8,
+  budget: 500,
+  modalita: "classic",
+  rosa: {
+    portieri: 3,
+    difensori: 8,
+    centrocampisti: 8,
+    attaccanti: 6,
+  },
+  regole: {
+    modificatoreDifesa: false,
+    imbattibilita: false,
+    portaInviolata: false,
+    assist: true,
+    rigori: true,
+  },
+  ordineAsta: "random",
 };
 
-export default PREZZI_STORICI;
+export default function Home() {
+  const [view, setView] = useState<"wizard" | "import" | "dashboard" | "asta">("wizard");
+  const [passo, setPasso] = useState(1);
+  const [config, setConfig] = useState<LegaConfig>(configIniziale);
+  const [giocatori, setGiocatori] = useState<Player[]>([]);
+  const [squadre, setSquadre] = useState<Squadra[]>([]);
+  const [acquisti, setAcquisti] = useState<Acquisto[]>([]);
+  const [ricerca, setRicerca] = useState("");
+  const [giocatoreSelezionato, setGiocatoreSelezionato] = useState<Player | null>(null);
+  const [prezzo, setPrezzo] = useState("");
+  const [squadraAcquirente, setSquadraAcquirente] = useState("");
+  const [messaggio, setMessaggio] = useState("");
+  const [filtroRuolo, setFiltroRuolo] = useState<string>("tutti");
+  const [ruoliCompletati, setRuoliCompletati] = useState<Set<string>>(new Set());
+  const [legaScandicci, setLegaScandicci] = useState<boolean>(false);
+
+  // Inizializza squadre quando si entra in asta
+  useEffect(() => {
+    if (view === "asta") {
+      const squadreSalvate = localStorage.getItem("fantai-squadre");
+      if (squadreSalvate) {
+        const parsed = JSON.parse(squadreSalvate);
+        setSquadre(parsed);
+        if (parsed.length > 0) setSquadraAcquirente(parsed[0].nome);
+      } else {
+        const iniziali: Squadra[] = legaScandicci
+          ? PROFILI_SCANDICCI.map((p) => ({
+              nome: p.nome,
+              budget: config.budget,
+              giocatori: [],
+            }))
+          : Array.from({ length: config.partecipanti }, (_, i) => ({
+              nome: `Squadra ${i + 1}`,
+              budget: config.budget,
+              giocatori: [],
+            }));
+        setSquadre(iniziali);
+        setSquadraAcquirente(iniziali[0]?.nome || "");
+      }
+      const giocatoriSalvati = localStorage.getItem("fantai-giocatori");
+      if (giocatoriSalvati) {
+        setGiocatori(JSON.parse(giocatoriSalvati));
+      }
+      const acquistiSalvati = localStorage.getItem("fantai-acquisti");
+      if (acquistiSalvati) {
+        setAcquisti(JSON.parse(acquistiSalvati));
+      }
+    }
+  }, [view, config, legaScandicci]);
+
+  const vaiAvanti = () => setPasso((p) => Math.min(p + 1, 7));
+  const vaiIndietro = () => setPasso((p) => Math.max(p - 1, 1));
+
+  const aggiornaConfig = (modifiche: Partial<LegaConfig>) => {
+    setConfig((prev) => ({ ...prev, ...modifiche }));
+  };
+
+  const salvaConfigurazione = () => {
+    localStorage.setItem("fantai-legaconfig", JSON.stringify(config));
+    localStorage.setItem("fantai-lega-scandicci", JSON.stringify(legaScandicci));
+    setView("import");
+  };
+
+  const handleImportComplete = (players: Player[]) => {
+    setGiocatori(players);
+    localStorage.setItem("fantai-giocatori", JSON.stringify(players));
+    setView("dashboard");
+  };
+
+  // ---------- FUNZIONI PER L'ASTA ----------
+
+  const giocatoriDisponibili = useMemo(() => {
+    return giocatori.filter(
+      (g) => !squadre.some((s) => s.giocatori.some((sg) => sg.nome === g.nome))
+    );
+  }, [giocatori, squadre]);
+
+  const giocatoriFiltrati = useMemo(() => {
+    let lista = giocatoriDisponibili;
+    if (filtroRuolo !== "tutti") {
+      lista = lista.filter((g) => g.ruolo === filtroRuolo);
+    }
+    if (ricerca.trim()) {
+      lista = lista.filter((g) =>
+        g.nome.toLowerCase().includes(ricerca.toLowerCase())
+      );
+    }
+    return [...lista].sort((a, b) => (b.fvm || 0) - (a.fvm || 0));
+  }, [giocatoriDisponibili, filtroRuolo, ricerca]);
+
+  // Controlla se un ruolo è esaurito e genera analisi
+  useEffect(() => {
+    const ruoli = ["P", "D", "C", "A"];
+    const nuoviCompletati = new Set(ruoliCompletati);
+    for (const ruolo of ruoli) {
+      const disponibili = giocatoriDisponibili.filter((g) => g.ruolo === ruolo);
+      if (disponibili.length === 0 && !ruoliCompletati.has(ruolo)) {
+        nuoviCompletati.add(ruolo);
+        setMessaggio(`*** ${ruolo} FINITI ***\n\n${generaAnalisiRuolo(ruolo, squadre, giocatori)}`);
+      }
+    }
+    setRuoliCompletati(nuoviCompletati);
+  }, [giocatoriDisponibili, squadre, giocatori, ruoliCompletati]);
+
+  // Algoritmo prezzo consigliato con dati storici
+  const calcolaPrezzoConsigliato = (player: Player): number => {
+    const base = player.fvm || player.quotazioneIniziale || 10;
+    const fattoreScala = config.budget / 1000;
+    let prezzoBase = base * fattoreScala;
+
+    let inflazione = 1;
+    if (acquisti.length > 0) {
+      const mediaPagata = acquisti.reduce((sum, a) => sum + a.prezzo, 0) / acquisti.length;
+      const mediaBase = acquisti.reduce((sum, a) => {
+        const giocatore = giocatori.find((g) => g.nome === a.giocatore);
+        return sum + (giocatore?.fvm || giocatore?.quotazioneIniziale || 10);
+      }, 0) / acquisti.length;
+      if (mediaBase > 0) {
+        inflazione = mediaPagata / mediaBase;
+        inflazione = Math.max(0.8, Math.min(inflazione, 1.5));
+      }
+    }
+
+    const ruolo = player.ruolo || "";
+    const fabbisognoRuolo = config.rosa[ruolo as keyof typeof config.rosa] || 5;
+    const giocatoriRuoloAcquistati = squadre.reduce(
+      (sum, s) => sum + s.giocatori.filter((g) => g.ruolo === ruolo).length,
+      0
+    );
+    const totaleNecessario = config.partecipanti * fabbisognoRuolo;
+    const domanda = Math.max(1, totaleNecessario - giocatoriRuoloAcquistati);
+    const fattoreDomanda = 1 + (domanda / totaleNecessario) * 0.5;
+
+    const budgetResiduoMedio = squadre.length > 0
+      ? squadre.reduce((sum, s) => sum + s.budget, 0) / squadre.length
+      : config.budget;
+    const fattoreBudget = budgetResiduoMedio / config.budget;
+
+    // Fattore profilo storico (solo se Scandicci)
+    let fattoreProfilo = 1;
+    if (legaScandicci && squadre.length > 0) {
+      const profiliInteressati = PROFILI_SCANDICCI.filter(
+        (p) => p.distribuzione[ruolo as keyof typeof p.distribuzione] > 25
+      );
+      if (profiliInteressati.length > 0) {
+        const mediaInteresse = profiliInteressati.reduce(
+          (sum, p) => sum + p.distribuzione[ruolo as keyof typeof p.distribuzione],
+          0
+        ) / profiliInteressati.length;
+        fattoreProfilo = 1 + (mediaInteresse - 20) / 100;
+      }
+    }
+
+    // Prezzo base algoritmo
+    let prezzoAlgoritmo = prezzoBase * inflazione * fattoreDomanda * fattoreBudget * fattoreProfilo;
+    const limiteMassimo = config.budget * 0.3;
+    prezzoAlgoritmo = Math.min(prezzoAlgoritmo, limiteMassimo);
+    prezzoAlgoritmo = Math.max(1, Math.round(prezzoAlgoritmo));
+
+    // Prezzo storico (normalizzato)
+    const nomeNormalizzato = player.nome
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const prezzoStorico = PREZZI_STORICI[nomeNormalizzato];
+
+    let prezzoFinale: number;
+    if (prezzoStorico !== undefined) {
+      // Combina: 60% storico, 40% algoritmo
+      prezzoFinale = Math.round(0.6 * prezzoStorico + 0.4 * prezzoAlgoritmo);
+    } else {
+      prezzoFinale = prezzoAlgoritmo;
+    }
+
+    // Limite massimo
+    prezzoFinale = Math.min(prezzoFinale, limiteMassimo);
+    prezzoFinale = Math.max(1, prezzoFinale);
+    return prezzoFinale;
+  };
+
+  const registraAcquisto = () => {
+    if (!giocatoreSelezionato || !prezzo || !squadraAcquirente) {
+      setMessaggio("Seleziona giocatore, inserisci prezzo e scegli squadra.");
+      return;
+    }
+
+    const prezzoNum = Number(prezzo);
+    if (isNaN(prezzoNum) || prezzoNum <= 0) {
+      setMessaggio("Prezzo non valido.");
+      return;
+    }
+
+    const squadraIndex = squadre.findIndex((s) => s.nome === squadraAcquirente);
+    if (squadraIndex === -1) {
+      setMessaggio("Squadra non trovata.");
+      return;
+    }
+
+    if (squadre[squadraIndex].budget < prezzoNum) {
+      setMessaggio(`Budget insufficiente per ${squadre[squadraIndex].nome}.`);
+      return;
+    }
+
+    const nuoveSquadre = [...squadre];
+    nuoveSquadre[squadraIndex] = {
+      ...nuoveSquadre[squadraIndex],
+      budget: nuoveSquadre[squadraIndex].budget - prezzoNum,
+      giocatori: [...nuoveSquadre[squadraIndex].giocatori, { ...giocatoreSelezionato, prezzoPagato: prezzoNum }],
+    };
+    setSquadre(nuoveSquadre);
+
+    const nuovoAcquisto: Acquisto = {
+      giocatore: giocatoreSelezionato.nome,
+      squadra: squadraAcquirente,
+      prezzo: prezzoNum,
+      timestamp: new Date().toISOString(),
+    };
+    const nuoviAcquisti = [...acquisti, nuovoAcquisto];
+    setAcquisti(nuoviAcquisti);
+
+    localStorage.setItem("fantai-squadre", JSON.stringify(nuoveSquadre));
+    localStorage.setItem("fantai-acquisti", JSON.stringify(nuoviAcquisti));
+
+    setGiocatoreSelezionato(null);
+    setPrezzo("");
+    setMessaggio(`Acquisto registrato: ${giocatoreSelezionato.nome} → ${squadraAcquirente} per ${prezzoNum} crediti.`);
+  };
+
+  const resetAsta = () => {
+    const conferma = window.confirm("Vuoi azzerare tutta l'asta?");
+    if (!conferma) return;
+    const iniziali: Squadra[] = legaScandicci
+      ? PROFILI_SCANDICCI.map((p) => ({
+          nome: p.nome,
+          budget: config.budget,
+          giocatori: [],
+        }))
+      : Array.from({ length: config.partecipanti }, (_, i) => ({
+          nome: `Squadra ${i + 1}`,
+          budget: config.budget,
+          giocatori: [],
+        }));
+    setSquadre(iniziali);
+    setAcquisti([]);
+    setGiocatoreSelezionato(null);
+    setPrezzo("");
+    setMessaggio("");
+    setRuoliCompletati(new Set());
+    localStorage.removeItem("fantai-squadre");
+    localStorage.removeItem("fantai-acquisti");
+    setSquadraAcquirente(iniziali[0]?.nome || "");
+  };
+
+  const cambiaNomeSquadra = (indice: number, nuovoNome: string) => {
+    const nuoveSquadre = [...squadre];
+    nuoveSquadre[indice] = { ...nuoveSquadre[indice], nome: nuovoNome };
+    setSquadre(nuoveSquadre);
+    localStorage.setItem("fantai-squadre", JSON.stringify(nuoveSquadre));
+    if (squadraAcquirente === squadre[indice]?.nome) {
+      setSquadraAcquirente(nuovoNome);
+    }
+  };
+
+  // Genera analisi del ruolo completato
+  const generaAnalisiRuolo = (ruolo: string, squadre: Squadra[], giocatori: Player[]): string => {
+    const ruoliMap: Record<string, string> = {
+      P: "Portieri",
+      D: "Difensori",
+      C: "Centrocampisti",
+      A: "Attaccanti",
+    };
+    const nomeRuolo = ruoliMap[ruolo] || ruolo;
+    let analisi = `Analisi ${nomeRuolo}:\n`;
+    for (const squadra of squadre) {
+      const giocatoriRuolo = squadra.giocatori.filter((g) => g.ruolo === ruolo);
+      if (giocatoriRuolo.length === 0) {
+        analisi += `• ${squadra.nome}: nessun ${nomeRuolo.toLowerCase()} acquistato (molto rischioso).\n`;
+        continue;
+      }
+      const fvmMedio = giocatoriRuolo.reduce((sum, g) => sum + (g.fvm || 0), 0) / giocatoriRuolo.length;
+      const nomi = giocatoriRuolo.map((g) => g.nome).join(", ");
+      let giudizio = "";
+      if (fvmMedio > 40) giudizio = "ottimo reparto";
+      else if (fvmMedio > 25) giudizio = "reparto solido";
+      else giudizio = "reparto debole";
+      analisi += `• ${squadra.nome}: ${nomi} (FVM medio: ${fvmMedio.toFixed(1)}). ${giudizio}.\n`;
+    }
+    return analisi;
+  };
+
+  // ---------- RENDER ----------
+
+  if (view === "asta") {
+    const prezzoConsigliato = giocatoreSelezionato ? calcolaPrezzoConsigliato(giocatoreSelezionato) : 0;
+    return (
+      <main className="min-h-screen bg-black text-white px-5 py-8">
+        <div className="mx-auto w-full max-w-md">
+          <button onClick={() => setView("dashboard")} className="mb-6 text-gray-400 underline">
+            ← Torna alla Dashboard
+          </button>
+
+          {legaScandicci && (
+            <div className="rounded-2xl border border-blue-800 bg-blue-950/30 p-5 mb-6">
+              <h3 className="text-lg font-bold text-blue-300 mb-2">Profili Avversari (Scandicci League)</h3>
+              <div className="max-h-48 overflow-y-auto text-sm space-y-1">
+                {PROFILI_SCANDICCI.map((p) => (
+                  <div key={p.nome} className="flex justify-between">
+                    <span className="font-semibold">{p.nome}</span>
+                    <span className="text-gray-400">{p.stile}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Modifica nomi squadre */}
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+            <h2 className="text-xl font-bold text-white mb-3">Nomi squadre</h2>
+            <div className="space-y-2">
+              {squadre.map((s, idx) => (
+                <div key={s.nome} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={s.nome}
+                    onChange={(e) => cambiaNomeSquadra(idx, e.target.value)}
+                    className="flex-1 rounded-lg border border-gray-700 bg-gray-800 p-2 text-white"
+                  />
+                  <span className="text-sm text-gray-400">Budget: {s.budget}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Riepilogo squadre */}
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+            <h2 className="text-xl font-bold text-white mb-3">Squadre e Budget</h2>
+            <div className="space-y-2">
+              {squadre.map((s) => (
+                <div key={s.nome} className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-white">{s.nome}</span>
+                  <span className="text-gray-300">Budget: {s.budget}</span>
+                  <span className="text-gray-500">Giocatori: {s.giocatori.length}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Filtro ruolo e ricerca */}
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+            <h2 className="text-xl font-bold text-white mb-3">Cerca giocatore</h2>
+            <div className="flex gap-2 mb-3">
+              <select
+                value={filtroRuolo}
+                onChange={(e) => setFiltroRuolo(e.target.value)}
+                className="flex-1 rounded-xl border border-gray-700 bg-gray-800 p-2 text-white"
+              >
+                <option value="tutti">Tutti i ruoli</option>
+                <option value="P">Portieri</option>
+                <option value="D">Difensori</option>
+                <option value="C">Centrocampisti</option>
+                <option value="A">Attaccanti</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Nome..."
+                value={ricerca}
+                onChange={(e) => setRicerca(e.target.value)}
+                className="flex-1 rounded-xl border border-gray-700 bg-gray-800 p-2 text-white"
+              />
+            </div>
+            <div className="mt-3 max-h-96 overflow-y-auto">
+              {giocatoriFiltrati.map((g, i) => (
+                <button
+                  key={`${g.nome}-${i}`}
+                  onClick={() => setGiocatoreSelezionato(g)}
+                  className={`w-full text-left px-4 py-2 rounded-lg mb-1 ${
+                    giocatoreSelezionato?.nome === g.nome
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  }`}
+                >
+                  {g.nome} {g.squadra && `(${g.squadra})`} {g.fvm ? `FVM: ${g.fvm}` : ""}
+                </button>
+              ))}
+              {giocatoriFiltrati.length === 0 && <p className="text-gray-500 text-sm">Nessun giocatore trovato.</p>}
+            </div>
+          </div>
+
+          {/* Migliori per ruolo */}
+          {filtroRuolo !== "tutti" && (
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+              <h2 className="text-xl font-bold text-white mb-3">Migliori {filtroRuolo} disponibili (per FVM)</h2>
+              <div className="max-h-96 overflow-y-auto">
+                {giocatoriFiltrati
+                  .filter((g) => g.ruolo === filtroRuolo)
+                  .sort((a, b) => (b.fvm || 0) - (a.fvm || 0))
+                  .map((g, i) => (
+                    <div key={i} className="flex justify-between text-sm py-1">
+                      <span>{g.nome}</span>
+                      <span className="text-gray-400">{g.fvm || "-"}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dettaglio giocatore */}
+          {giocatoreSelezionato && (
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+              <h2 className="text-xl font-bold text-white mb-2">{giocatoreSelezionato.nome}</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                {giocatoreSelezionato.ruolo} • {giocatoreSelezionato.squadra}
+                {giocatoreSelezionato.fvm && ` • FVM: ${giocatoreSelezionato.fvm}`}
+              </p>
+
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-green-950 p-3 text-center">
+                  <p className="text-xs text-green-400">Consigliato</p>
+                  <p className="text-xl font-bold">{prezzoConsigliato}</p>
+                </div>
+                <div className="rounded-xl bg-orange-950 p-3 text-center">
+                  <p className="text-xs text-orange-400">Aggressivo</p>
+                  <p className="text-xl font-bold">{Math.round(prezzoConsigliato * 1.1)}</p>
+                </div>
+                <div className="rounded-xl bg-red-950 p-3 text-center">
+                  <p className="text-xs text-red-400">Massimo</p>
+                  <p className="text-xl font-bold">{Math.round(prezzoConsigliato * 1.2)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="number"
+                  placeholder="Prezzo pagato"
+                  value={prezzo}
+                  onChange={(e) => setPrezzo(e.target.value)}
+                  className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white"
+                />
+                <select
+                  value={squadraAcquirente}
+                  onChange={(e) => setSquadraAcquirente(e.target.value)}
+                  className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white"
+                >
+                  {squadre.map((s) => (
+                    <option key={s.nome} value={s.nome}>
+                      {s.nome} (Budget: {s.budget})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={registraAcquisto}
+                  className="w-full rounded-xl bg-orange-600 px-6 py-4 font-bold text-white"
+                >
+                  Registra Acquisto
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Messaggio */}
+          {messaggio && (
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-4 whitespace-pre-wrap">
+              <p className="text-sm text-gray-300">{messaggio}</p>
+            </div>
+          )}
+
+          {/* Cronologia acquisti */}
+          {acquisti.length > 0 && (
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+              <h3 className="text-lg font-bold text-white mb-3">Ultimi acquisti</h3>
+              <ul className="space-y-2 text-sm text-gray-300">
+                {acquisti.slice(-10).reverse().map((a, i) => (
+                  <li key={i} className="flex justify-between">
+                    <span>{a.giocatore}</span>
+                    <span>{a.squadra} - {a.prezzo} cr</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <button
+            onClick={resetAsta}
+            className="mt-6 w-full rounded-xl border border-gray-700 bg-gray-800 px-6 py-3 font-semibold text-white"
+          >
+            Azzera asta
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  // ---------- DASHBOARD ----------
+  if (view === "dashboard") {
+    return (
+      <main className="min-h-screen bg-black text-white px-5 py-8">
+        <div className="mx-auto w-full max-w-md">
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+            <h2 className="text-2xl font-bold text-green-400">Dashboard</h2>
+            <div className="mt-4 space-y-2 text-sm text-gray-300">
+              <p><span className="font-semibold">Partecipanti:</span> {config.partecipanti}</p>
+              <p><span className="font-semibold">Budget:</span> {config.budget} crediti</p>
+              <p><span className="font-semibold">Modalità:</span> {config.modalita === "classic" ? "Classic" : "Mantra"}</p>
+              <p><span className="font-semibold">Giocatori importati:</span> {giocatori.length}</p>
+            </div>
+          </div>
+          <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <h3 className="text-lg font-bold mb-3">Primi 20 giocatori</h3>
+            <ul className="space-y-2 max-h-96 overflow-y-auto">
+              {giocatori.slice(0, 20).map((g, i) => (
+                <li key={i} className="flex justify-between text-sm text-gray-300">
+                  <span>{g.nome}</span>
+                  <span>{g.squadra || "-"}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <button
+            onClick={() => setView("asta")}
+            className="mt-6 w-full rounded-xl bg-orange-600 px-6 py-4 font-bold text-white"
+          >
+            Modalità Asta
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("fantai-legaconfig");
+              localStorage.removeItem("fantai-giocatori");
+              localStorage.removeItem("fantai-squadre");
+              localStorage.removeItem("fantai-acquisti");
+              localStorage.removeItem("fantai-lega-scandicci");
+              window.location.reload();
+            }}
+            className="mt-3 w-full rounded-xl bg-gray-700 px-6 py-3 font-semibold text-white"
+          >
+            Reimposta tutto
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  // ---------- IMPORT ----------
+  if (view === "import") {
+    return (
+      <main className="min-h-screen bg-black text-white px-5 py-8">
+        <div className="mx-auto w-full max-w-md">
+          <ImportListone onComplete={handleImportComplete} />
+          <button
+            onClick={() => {
+              setView("wizard");
+              setPasso(7);
+            }}
+            className="mt-6 w-full rounded-xl border border-gray-700 bg-gray-800 px-5 py-3 font-semibold text-white active:scale-[0.98]"
+          >
+            Modifica configurazione
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  // ---------- WIZARD ----------
+  return (
+    <main className="min-h-screen bg-black text-white px-5 py-8">
+      <div className="mx-auto w-full max-w-md">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-semibold tracking-widest text-orange-500">FANTAI AUCTION PRO</p>
+          <h1 className="mt-2 text-3xl font-bold">Configura la tua lega</h1>
+          <p className="mt-2 text-sm text-gray-400">Passo {passo} di 7</p>
+        </div>
+        <div className="mb-8 h-2 rounded-full bg-gray-800">
+          <div className="h-2 rounded-full bg-orange-600 transition-all" style={{ width: `${(passo / 7) * 100}%` }} />
+        </div>
+
+        {passo === 1 && (
+          <section className="text-center">
+            <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+              <div className="mb-5 text-5xl">⚽</div>
+              <h2 className="text-2xl font-bold">Benvenuto in FantAI</h2>
+              <p className="mt-4 text-gray-400">Scegli il tipo di lega per iniziare.</p>
+              <div className="mt-8 space-y-3">
+                <button
+                  onClick={() => {
+                    setLegaScandicci(false);
+                    setConfig({ ...configIniziale, partecipanti: 8 });
+                    vaiAvanti();
+                  }}
+                  className="w-full rounded-xl bg-orange-600 px-6 py-4 text-lg font-bold active:scale-95"
+                >
+                  Nuova Lega
+                </button>
+                <button
+                  onClick={() => {
+                    setLegaScandicci(true);
+                    setConfig({ ...configIniziale, partecipanti: 10 });
+                    vaiAvanti();
+                  }}
+                  className="w-full rounded-xl bg-blue-600 px-6 py-4 text-lg font-bold active:scale-95"
+                >
+                  Scandicci League
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {passo === 2 && (
+          <section>
+            <h2 className="text-2xl font-bold">Numero partecipanti</h2>
+            <p className="mt-2 text-gray-400">Quante squadre partecipano?</p>
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              {[6, 8, 10, 12].map((numero) => (
+                <button
+                  key={numero}
+                  onClick={() => aggiornaConfig({ partecipanti: numero })}
+                  className={`rounded-xl border p-5 text-xl font-bold ${
+                    config.partecipanti === numero ? "border-green-500 bg-green-600" : "border-gray-700 bg-gray-900"
+                  }`}
+                >
+                  {numero}
+                </button>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={vaiAvanti} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Avanti</button>
+            </div>
+          </section>
+        )}
+
+        {passo === 3 && (
+          <section>
+            <h2 className="text-2xl font-bold">Budget iniziale</h2>
+            <p className="mt-2 text-gray-400">Quanti crediti avrà ogni squadra?</p>
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={config.budget}
+              onChange={(e) => aggiornaConfig({ budget: Number(e.target.value) })}
+              className="mt-6 w-full rounded-xl border border-gray-700 bg-gray-900 p-4 text-2xl font-bold text-white"
+            />
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={vaiAvanti} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Avanti</button>
+            </div>
+          </section>
+        )}
+
+        {passo === 4 && (
+          <section>
+            <h2 className="text-2xl font-bold">Modalità</h2>
+            <p className="mt-2 text-gray-400">Scegli la modalità della lega.</p>
+            <div className="mt-6 space-y-3">
+              <button
+                onClick={() => aggiornaConfig({ modalita: "classic" })}
+                className={`w-full rounded-xl border p-5 text-left ${
+                  config.modalita === "classic" ? "border-green-500 bg-green-600" : "border-gray-700 bg-gray-900"
+                }`}
+              >
+                <p className="font-bold">Classic</p>
+              </button>
+              <button
+                onClick={() => aggiornaConfig({ modalita: "mantra" })}
+                className={`w-full rounded-xl border p-5 text-left ${
+                  config.modalita === "mantra" ? "border-green-500 bg-green-600" : "border-gray-700 bg-gray-900"
+                }`}
+              >
+                <p className="font-bold">Mantra</p>
+              </button>
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={vaiAvanti} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Avanti</button>
+            </div>
+          </section>
+        )}
+
+        {passo === 5 && (
+          <section>
+            <h2 className="text-2xl font-bold">Composizione rosa</h2>
+            <p className="mt-2 text-gray-400">Imposta i giocatori per ruolo.</p>
+            <div className="mt-6 space-y-3">
+              {(
+                [
+                  ["portieri", "Portieri"],
+                  ["difensori", "Difensori"],
+                  ["centrocampisti", "Centrocampisti"],
+                  ["attaccanti", "Attaccanti"],
+                ] as const
+              ).map(([chiave, nome]) => (
+                <div key={chiave} className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900 p-4">
+                  <span className="text-gray-300">{nome}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    inputMode="numeric"
+                    value={config.rosa[chiave]}
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        rosa: { ...prev.rosa, [chiave]: Number(e.target.value) },
+                      }))
+                    }
+                    className="w-20 rounded-lg border border-gray-700 bg-gray-800 p-2 text-center font-bold"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={vaiAvanti} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Avanti</button>
+            </div>
+          </section>
+        )}
+
+        {passo === 6 && (
+          <section>
+            <h2 className="text-2xl font-bold">Regole</h2>
+            <p className="mt-2 text-gray-400">Seleziona le regole della lega.</p>
+            <div className="mt-6 space-y-3">
+              {(
+                [
+                  ["modificatoreDifesa", "Modificatore difesa"],
+                  ["imbattibilita", "Imbattibilità"],
+                  ["portaInviolata", "Porta inviolata"],
+                  ["assist", "Assist"],
+                  ["rigori", "Rigori"],
+                ] as const
+              ).map(([chiave, nome]) => {
+                const attiva = config.regole[chiave];
+                return (
+                  <button
+                    key={chiave}
+                    onClick={() =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        regole: { ...prev.regole, [chiave]: !attiva },
+                      }))
+                    }
+                    className="flex w-full items-center justify-between rounded-xl border border-gray-800 bg-gray-900 p-4"
+                  >
+                    <span className="text-gray-300">{nome}</span>
+                    <span className={`h-7 w-12 rounded-full p-1 ${attiva ? "bg-green-600" : "bg-gray-700"}`}>
+                      <span className={`block h-5 w-5 rounded-full bg-white transition-transform ${attiva ? "translate-x-5" : ""}`} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={vaiAvanti} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Avanti</button>
+            </div>
+          </section>
+        )}
+
+        {passo === 7 && (
+          <section>
+            <h2 className="text-2xl font-bold">Ordine asta</h2>
+            <p className="mt-2 text-gray-400">Scegli come gestire l'ordine.</p>
+            <div className="mt-6 space-y-3">
+              {(
+                [
+                  ["random", "Random per ruolo"],
+                  ["libera", "Libera"],
+                  ["manuale", "Manuale"],
+                ] as const
+              ).map(([valore, nome]) => (
+                <button
+                  key={valore}
+                  onClick={() => aggiornaConfig({ ordineAsta: valore as LegaConfig["ordineAsta"] })}
+                  className={`w-full rounded-xl border p-5 text-left ${
+                    config.ordineAsta === valore ? "border-green-500 bg-green-600" : "border-gray-700 bg-gray-900"
+                  }`}
+                >
+                  <p className="font-bold">{nome}</p>
+                </button>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-between">
+              <button onClick={vaiIndietro} className="text-gray-400 underline">Indietro</button>
+              <button onClick={salvaConfigurazione} className="rounded-xl bg-orange-600 px-7 py-3 font-bold">Completa</button>
+            </div>
+          </section>
+        )}
+      </div>
+    </main>
+  );
+}
