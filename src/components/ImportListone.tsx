@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import * as XLSX from "xlsx";
 
 interface Giocatore {
   nome: string;
   squadra: string;
   ruolo: string;
+  ruoloMantra: string;
   quotazione: number | null;
   quotazioneAttuale: number | null;
   fvm: number | null;
@@ -16,7 +17,7 @@ interface ImportListoneProps {
   onImport?: (giocatori: Giocatore[]) => void;
 }
 
-function normalizzaTesto(valore: unknown): string {
+function normalizza(valore: unknown): string {
   return String(valore ?? "")
     .trim()
     .toLowerCase()
@@ -25,15 +26,49 @@ function normalizzaTesto(valore: unknown): string {
     .replace(/\s+/g, " ");
 }
 
+function testo(valore: unknown): string {
+  return String(valore ?? "").trim();
+}
+
+function numero(valore: unknown): number | null {
+  if (valore === null || valore === undefined || valore === "") {
+    return null;
+  }
+
+  if (typeof valore === "number") {
+    return Number.isFinite(valore) ? valore : null;
+  }
+
+  let stringa = String(valore).trim();
+
+  stringa = stringa.replace(/[^\d,.-]/g, "");
+
+  if (stringa.includes(",") && stringa.includes(".")) {
+    if (stringa.lastIndexOf(",") > stringa.lastIndexOf(".")) {
+      stringa = stringa.replace(/\./g, "").replace(",", ".");
+    } else {
+      stringa = stringa.replace(/,/g, "");
+    }
+  } else {
+    stringa = stringa.replace(",", ".");
+  }
+
+  const risultato = Number(stringa);
+
+  return Number.isFinite(risultato) ? risultato : null;
+}
+
 function trovaColonna(
   intestazioni: string[],
-  alternative: string[]
+  nomi: string[]
 ): number {
-  const normalizzate = intestazioni.map(normalizzaTesto);
+  const normalizzate = intestazioni.map(normalizza);
 
-  for (const alternativa of alternative) {
-    const indice = normalizzate.indexOf(
-      normalizzaTesto(alternativa)
+  for (const nome of nomi) {
+    const target = normalizza(nome);
+
+    const indice = normalizzate.findIndex(
+      (colonna) => colonna === target
     );
 
     if (indice !== -1) {
@@ -41,84 +76,91 @@ function trovaColonna(
     }
   }
 
-  for (let i = 0; i < normalizzate.length; i++) {
-    for (const alternativa of alternative) {
-      const target = normalizzaTesto(alternativa);
+  for (const nome of nomi) {
+    const target = normalizza(nome);
 
-      if (
-        target.length >= 3 &&
-        (
-          normalizzate[i].includes(target) ||
-          target.includes(normalizzate[i])
-        )
-      ) {
-        return i;
-      }
+    const indice = normalizzate.findIndex(
+      (colonna) =>
+        colonna.includes(target) ||
+        target.includes(colonna)
+    );
+
+    if (indice !== -1) {
+      return indice;
     }
   }
 
   return -1;
 }
 
-function trovaRigaIntestazioni(
+function trovaIntestazione(
   righe: unknown[][]
 ): {
   indice: number;
-  intestazioni: string[];
+  colonne: string[];
 } | null {
-  const paroleChiave = [
-    "calciatore",
-    "giocatore",
-    "nome",
-    "player",
-    "sq",
-    "squadra",
-    "team",
-    "qi",
-    "qa",
-    "fvm",
-    "quotazione",
-    "ruolo",
-  ];
-
   let migliore: {
     indice: number;
-    intestazioni: string[];
+    colonne: string[];
     punteggio: number;
   } | null = null;
 
-  const limite = Math.min(righe.length, 30);
+  const massimo = Math.min(righe.length, 50);
 
-  for (let i = 0; i < limite; i++) {
-    const riga = righe[i];
+  for (let r = 0; r < massimo; r++) {
+    const riga = righe[r];
 
     if (!Array.isArray(riga)) {
       continue;
     }
 
-    const intestazioni = riga.map((cella) =>
-      String(cella ?? "").trim()
-    );
+    const colonne = riga.map((cella) => testo(cella));
 
     let punteggio = 0;
 
-    for (const intestazione of intestazioni) {
-      const valore = normalizzaTesto(intestazione);
+    for (const colonna of colonne) {
+      const c = normalizza(colonna);
 
-      if (!valore) {
-        continue;
+      if (
+        c === "calciatore" ||
+        c === "giocatore" ||
+        c === "nome"
+      ) {
+        punteggio += 10;
       }
 
-      for (const parola of paroleChiave) {
-        const target = normalizzaTesto(parola);
+      if (
+        c === "sq" ||
+        c === "squadra" ||
+        c === "team"
+      ) {
+        punteggio += 5;
+      }
 
-        if (
-          valore === target ||
-          valore.includes(target)
-        ) {
-          punteggio++;
-          break;
-        }
+      if (
+        c === "qi" ||
+        c === "quotazione iniziale"
+      ) {
+        punteggio += 5;
+      }
+
+      if (
+        c === "qa" ||
+        c === "quotazione attuale"
+      ) {
+        punteggio += 5;
+      }
+
+      if (c === "fvm") {
+        punteggio += 5;
+      }
+
+      if (
+        c === "ruolo" ||
+        c === "role" ||
+        c === "r"
+      ) {
+        punteggio += 4;
       }
     }
 
@@ -127,297 +169,232 @@ function trovaRigaIntestazioni(
       punteggio > migliore.punteggio
     ) {
       migliore = {
-        indice: i,
-        intestazioni,
+        indice: r,
+        colonne,
         punteggio,
       };
     }
   }
 
-  if (
-    migliore === null ||
-    migliore.punteggio < 1
-  ) {
+  if (migliore === null) {
     return null;
   }
 
   return {
     indice: migliore.indice,
-    intestazioni: migliore.intestazioni,
+    colonne: migliore.colonne,
   };
 }
 
-function convertiNumero(
-  valore: unknown
-): number | null {
-  if (
-    valore === null ||
-    valore === undefined ||
-    valore === ""
-  ) {
-    return null;
-  }
-
-  if (typeof valore === "number") {
-    return Number.isFinite(valore)
-      ? valore
-      : null;
-  }
-
-  const testo = String(valore)
-    .trim()
-    .replace(",", ".");
-
-  const numero = Number(testo);
-
-  return Number.isFinite(numero)
-    ? numero
-    : null;
-}
-
-function sembraGiocatore(
-  nome: string,
-  squadra: string,
-  ruolo: string
-): boolean {
-  if (!nome || nome.length < 2) {
-    return false;
-  }
-
-  const nomeNormalizzato =
-    normalizzaTesto(nome);
-
-  const esclusioni = [
-    "calciatore",
-    "giocatore",
-    "nome",
-    "player",
-    "squadra",
-    "team",
-    "totale",
-    "media",
-    "quotazione",
-    "fvm",
-    "fantavalore",
-  ];
-
-  if (
-    esclusioni.includes(nomeNormalizzato)
-  ) {
-    return false;
-  }
-
-  if (squadra || ruolo) {
-    return true;
-  }
-
-  return /[a-zA-ZÀ-ÿ]/.test(nome);
-}
-
-function estraiGiocatoriDaFoglio(
+function estraiDaFoglio(
   foglio: XLSX.WorkSheet
 ): Giocatore[] {
-  const righe =
-    XLSX.utils.sheet_to_json<unknown[]>(
-      foglio,
-      {
-        header: 1,
-        defval: "",
-        raw: true,
-      }
-    );
+  const righe = XLSX.utils.sheet_to_json<unknown[][]>(
+    foglio,
+    {
+      header: 1,
+      defval: "",
+      raw: true,
+    }
+  );
 
   if (righe.length === 0) {
     return [];
   }
 
-  const informazioni =
-    trovaRigaIntestazioni(righe);
+  const informazioni = trovaIntestazione(righe);
 
-  if (!informazioni) {
+  if (informazioni === null) {
     return [];
   }
 
-  const {
-    indice: rigaIntestazioni,
-    intestazioni,
-  } = informazioni;
+  const indiceIntestazione =
+    informazioni.indice;
 
-  const indiceNome = trovaColonna(
-    intestazioni,
+  const colonne = informazioni.colonne;
+
+  let indiceNome = trovaColonna(
+    colonne,
     [
       "Calciatore",
-      "Nome",
       "Giocatore",
+      "Nome",
+      "Nome calciatore",
       "Player",
-      "Cognome",
     ]
   );
 
   const indiceSquadra = trovaColonna(
-    intestazioni,
+    colonne,
     [
       "Sq",
       "Squadra",
       "Team",
-      "Società",
       "Club",
     ]
   );
 
   const indiceRuolo = trovaColonna(
-    intestazioni,
+    colonne,
     [
       "Ruolo",
-      "R",
       "Role",
-      "Posizione",
+      "R",
     ]
   );
 
   const indiceQI = trovaColonna(
-    intestazioni,
+    colonne,
     [
       "QI",
       "Quotazione iniziale",
-      "Quotazione",
-      "Prezzo iniziale",
     ]
   );
 
   const indiceQA = trovaColonna(
-    intestazioni,
+    colonne,
     [
       "QA",
       "Quotazione attuale",
-      "Prezzo attuale",
     ]
   );
 
   const indiceFVM = trovaColonna(
-    intestazioni,
+    colonne,
     [
       "FVM",
+      "FVM / 1000",
+      "Fantavalore di mercato",
       "Fantavalore",
-      "Fantavalore di Mercato",
     ]
   );
 
-  let colonnaNome = indiceNome;
-
   /*
-   * Se non troviamo una colonna chiamata
-   * "Nome", "Calciatore" o simile,
-   * proviamo a identificare automaticamente
-   * la colonna che contiene i nomi dei giocatori.
+   * Se la colonna nome non viene trovata,
+   * cerchiamo automaticamente la prima colonna
+   * che contiene valori testuali compatibili
+   * con nomi di calciatori.
    */
-  if (colonnaNome === -1) {
-    let miglioreIndice = -1;
-    let migliorePunteggio = 0;
+  if (indiceNome === -1) {
+    let migliorIndice = -1;
+    let migliorPunteggio = 0;
 
-    for (
-      let colonna = 0;
-      colonna < intestazioni.length;
-      colonna++
-    ) {
+    const numeroColonne = colonne.length;
+
+    for (let c = 0; c < numeroColonne; c++) {
       let punteggio = 0;
 
       for (
-        let riga = rigaIntestazioni + 1;
-        riga <
-          Math.min(
-            righe.length,
-            rigaIntestazioni + 80
-          );
-        riga++
+        let r = indiceIntestazione + 1;
+        r < Math.min(righe.length, indiceIntestazione + 100);
+        r++
       ) {
-        const valore = String(
-          righe[riga]?.[colonna] ?? ""
-        ).trim();
+        const valore = testo(righe[r]?.[c]);
 
         if (
-          valore.length >= 2 &&
-          valore.length <= 60 &&
-          /[a-zA-ZÀ-ÿ]/.test(valore)
+          valore.length >= 3 &&
+          valore.length <= 50 &&
+          /[A-Za-zÀ-ÿ]/.test(valore)
         ) {
-          punteggio++;
+          if (
+            !/^\d+$/.test(valore) &&
+            !/^(sq|qi|qa|fvm)$/i.test(valore)
+          ) {
+            punteggio++;
+          }
         }
       }
 
-      if (
-        punteggio > migliorePunteggio
-      ) {
-        migliorePunteggio = punteggio;
-        miglioreIndice = colonna;
+      if (punteggio > migliorPunteggio) {
+        migliorPunteggio = punteggio;
+        migliorIndice = c;
       }
     }
 
-    colonnaNome = miglioreIndice;
+    indiceNome = migliorIndice;
   }
 
-  if (colonnaNome === -1) {
+  if (indiceNome === -1) {
     return [];
   }
 
   const giocatori: Giocatore[] = [];
 
   for (
-    let i = rigaIntestazioni + 1;
-    i < righe.length;
-    i++
+    let r = indiceIntestazione + 1;
+    r < righe.length;
+    r++
   ) {
-    const riga = righe[i];
+    const riga = righe[r];
 
     if (!Array.isArray(riga)) {
       continue;
     }
 
-    const nome = String(
-      riga[colonnaNome] ?? ""
-    ).trim();
+    const nome = testo(riga[indiceNome]);
+
+    if (!nome) {
+      continue;
+    }
+
+    const nomeNorm = normalizza(nome);
+
+    const valoriNonGiocatore = [
+      "calciatore",
+      "giocatore",
+      "nome",
+      "totale",
+      "media",
+      "quotazione",
+      "fvm",
+      "fantavalore",
+      "squadra",
+      "team",
+    ];
+
+    if (valoriNonGiocatore.includes(nomeNorm)) {
+      continue;
+    }
 
     const squadra =
       indiceSquadra !== -1
-        ? String(
-            riga[indiceSquadra] ?? ""
-          ).trim()
+        ? testo(riga[indiceSquadra])
         : "";
 
     const ruolo =
       indiceRuolo !== -1
-        ? String(
-            riga[indiceRuolo] ?? ""
-          ).trim()
+        ? testo(riga[indiceRuolo])
         : "";
 
     const quotazione =
       indiceQI !== -1
-        ? convertiNumero(
-            riga[indiceQI]
-          )
+        ? numero(riga[indiceQI])
         : null;
 
     const quotazioneAttuale =
       indiceQA !== -1
-        ? convertiNumero(
-            riga[indiceQA]
-          )
+        ? numero(riga[indiceQA])
         : null;
 
     const fvm =
       indiceFVM !== -1
-        ? convertiNumero(
-            riga[indiceFVM]
-          )
+        ? numero(riga[indiceFVM])
         : null;
 
-    if (
-      !sembraGiocatore(
-        nome,
-        squadra,
-        ruolo
-      )
-    ) {
+    /*
+     * Alcune versioni del listone possono avere
+     * una struttura con più colonne ruolo/quotazioni.
+     * Non scartiamo il giocatore se alcune informazioni
+     * sono mancanti.
+     */
+    const haInformazioniUtili =
+      squadra !== "" ||
+      ruolo !== "" ||
+      quotazione !== null ||
+      quotazioneAttuale !== null ||
+      fvm !== null;
+
+    if (!haInformazioniUtili) {
       continue;
     }
 
@@ -425,6 +402,7 @@ function estraiGiocatoriDaFoglio(
       nome,
       squadra,
       ruolo,
+      ruoloMantra: "",
       quotazione,
       quotazioneAttuale,
       fvm,
@@ -432,6 +410,17 @@ function estraiGiocatoriDaFoglio(
   }
 
   return giocatori;
+}
+
+function ordinaGiocatori(
+  giocatori: Giocatore[]
+): Giocatore[] {
+  return [...giocatori].sort((a, b) =>
+    a.nome.localeCompare(
+      b.nome,
+      "it"
+    )
+  );
 }
 
 export default function ImportListone({
@@ -449,8 +438,11 @@ export default function ImportListone({
   const [caricamento, setCaricamento] =
     useState(false);
 
+  const [foglioUsato, setFoglioUsato] =
+    useState("");
+
   const gestisciFile = async (
-    evento: React.ChangeEvent<HTMLInputElement>
+    evento: ChangeEvent<HTMLInputElement>
   ) => {
     const file =
       evento.target.files?.[0];
@@ -462,6 +454,7 @@ export default function ImportListone({
     setNomeFile(file.name);
     setErrore("");
     setGiocatori([]);
+    setFoglioUsato("");
     setCaricamento(true);
 
     try {
@@ -471,10 +464,20 @@ export default function ImportListone({
       const workbook =
         XLSX.read(buffer, {
           type: "array",
+          cellDates: true,
         });
 
-      let miglioriGiocatori: Giocatore[] =
-        [];
+      if (
+        !workbook.SheetNames ||
+        workbook.SheetNames.length === 0
+      ) {
+        throw new Error(
+          "Il file non contiene fogli leggibili."
+        );
+      }
+
+      let migliorRisultato: Giocatore[] = [];
+      let migliorFoglio = "";
 
       for (
         const nomeFoglio
@@ -487,79 +490,97 @@ export default function ImportListone({
           continue;
         }
 
-        const risultati =
-          estraiGiocatoriDaFoglio(
-            foglio
-          );
+        const risultato =
+          estraiDaFoglio(foglio);
 
         if (
-          risultati.length >
-          miglioriGiocatori.length
+          risultato.length >
+          migliorRisultato.length
         ) {
-          miglioriGiocatori =
-            risultati;
+          migliorRisultato =
+            risultato;
+
+          migliorFoglio =
+            nomeFoglio;
         }
       }
 
       if (
-        miglioriGiocatori.length === 0
+        migliorRisultato.length === 0
       ) {
         throw new Error(
-          "Non sono riuscito a riconoscere i giocatori nel file."
+          "Non sono riuscito a riconoscere i calciatori nel listone. Il file è stato aperto correttamente, ma la struttura delle righe non è stata riconosciuta."
         );
       }
 
-      setGiocatori(
-        miglioriGiocatori
-      );
+      const ordinati =
+        ordinaGiocatori(
+          migliorRisultato
+        );
+
+      setGiocatori(ordinati);
+      setFoglioUsato(migliorFoglio);
 
       if (onImport) {
-        onImport(
-          miglioriGiocatori
-        );
+        onImport(ordinati);
       }
     } catch (error) {
-      console.error(error);
-
-      setErrore(
-        error instanceof Error
-          ? error.message
-          : "Errore durante la lettura del file."
+      console.error(
+        "Errore importazione:",
+        error
       );
+
+      if (
+        error instanceof Error
+      ) {
+        setErrore(error.message);
+      } else {
+        setErrore(
+          "Errore durante la lettura del file."
+        );
+      }
     } finally {
       setCaricamento(false);
+
+      /*
+       * Permette di selezionare nuovamente
+       * lo stesso file dopo un errore.
+       */
+      evento.target.value = "";
     }
   };
 
   return (
     <div className="w-full">
-      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+      <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 sm:p-6">
 
         <h2 className="mb-2 text-2xl font-bold text-white">
           Importa Listone
         </h2>
 
-        <p className="mb-6 text-sm text-gray-400">
-          Carica il listone Excel o CSV.
-          FantAI proverà a riconoscere
-          automaticamente le colonne.
+        <p className="mb-6 text-sm leading-6 text-gray-400">
+          Carica il listone ufficiale
+          Fantacalcio in formato Excel
+          oppure CSV. FantAI analizzerà
+          automaticamente le colonne
+          disponibili.
         </p>
 
         <label className="block cursor-pointer">
-          <div className="rounded-xl border-2 border-dashed border-gray-700 bg-gray-800 p-6 text-center active:scale-[0.99]">
+          <div className="rounded-2xl border-2 border-dashed border-gray-700 bg-gray-800 p-7 text-center transition active:scale-[0.99]">
 
-            <div className="mb-2 text-3xl">
+            <div className="mb-3 text-4xl">
               📄
             </div>
 
-            <div className="font-semibold text-white">
+            <div className="text-lg font-bold text-white">
               {caricamento
-                ? "Analisi del file..."
-                : "Seleziona file"}
+                ? "Analisi del listone..."
+                : "Seleziona il listone"}
             </div>
 
-            <div className="mt-1 text-xs text-gray-400">
-              XLSX, XLS oppure CSV
+            <div className="mt-2 text-xs text-gray-400">
+              XLSX, XLS o CSV
             </div>
 
           </div>
@@ -568,27 +589,47 @@ export default function ImportListone({
             type="file"
             accept=".xlsx,.xls,.csv"
             onChange={gestisciFile}
+            disabled={caricamento}
             className="hidden"
           />
         </label>
 
-        {nomeFile && (
-          <div className="mt-4 rounded-lg bg-gray-800 p-3 text-sm text-gray-300">
-            File:{" "}
-            <span className="font-semibold text-white">
+        {nomeFile !== "" && (
+          <div className="mt-4 rounded-xl border border-gray-800 bg-gray-950 p-4">
+
+            <p className="text-xs text-gray-500">
+              File selezionato
+            </p>
+
+            <p className="mt-1 break-all font-semibold text-white">
               {nomeFile}
-            </span>
+            </p>
+
           </div>
         )}
 
-        {errore && (
-          <div className="mt-4 rounded-xl border border-red-800 bg-red-950/40 p-4">
+        {caricamento && (
+          <div className="mt-5 rounded-xl border border-orange-800 bg-orange-950/30 p-4">
 
-            <p className="font-semibold text-red-400">
-              Errore importazione
+            <p className="font-semibold text-orange-400">
+              Sto analizzando il file...
             </p>
 
-            <p className="mt-1 text-sm text-red-300">
+            <p className="mt-1 text-sm text-orange-300">
+              Non chiudere questa pagina.
+            </p>
+
+          </div>
+        )}
+
+        {errore !== "" && (
+          <div className="mt-5 rounded-xl border border-red-800 bg-red-950/40 p-4">
+
+            <p className="font-bold text-red-400">
+              Importazione non riuscita
+            </p>
+
+            <p className="mt-2 text-sm leading-6 text-red-300">
               {errore}
             </p>
 
@@ -598,10 +639,10 @@ export default function ImportListone({
         {giocatori.length > 0 && (
           <div className="mt-6">
 
-            <div className="mb-4 rounded-xl border border-green-800 bg-green-950/30 p-4">
+            <div className="rounded-xl border border-green-800 bg-green-950/30 p-4">
 
               <p className="font-bold text-green-400">
-                Importazione completata
+                Listone importato correttamente
               </p>
 
               <p className="mt-1 text-sm text-green-300">
@@ -609,21 +650,29 @@ export default function ImportListone({
                 <strong>
                   {giocatori.length}
                 </strong>{" "}
-                giocatori.
+                calciatori.
               </p>
+
+              {foglioUsato !== "" && (
+                <p className="mt-1 text-xs text-green-400/70">
+                  Foglio utilizzato:{" "}
+                  {foglioUsato}
+                </p>
+              )}
 
             </div>
 
-            <div className="overflow-hidden rounded-xl border border-gray-800">
+            <div className="mt-5 overflow-hidden rounded-xl border border-gray-800">
 
-              <div className="max-h-96 overflow-y-auto">
+              <div className="max-h-[420px] overflow-auto">
 
-                <table className="w-full text-left text-sm">
+                <table className="w-full min-w-[650px] text-left text-sm">
 
-                  <thead className="sticky top-0 bg-gray-800 text-gray-300">
+                  <thead className="sticky top-0 z-10 bg-gray-800 text-gray-300">
+
                     <tr>
                       <th className="px-3 py-3">
-                        Giocatore
+                        Calciatore
                       </th>
 
                       <th className="px-3 py-3">
@@ -639,12 +688,18 @@ export default function ImportListone({
                       </th>
 
                       <th className="px-3 py-3">
+                        QA
+                      </th>
+
+                      <th className="px-3 py-3">
                         FVM
                       </th>
                     </tr>
+
                   </thead>
 
                   <tbody>
+
                     {giocatori
                       .slice(0, 100)
                       .map(
@@ -653,10 +708,11 @@ export default function ImportListone({
                           indice
                         ) => (
                           <tr
-                            key={`${giocatore.nome}-${indice}`}
+                            key={`${giocatore.nome}-${giocatore.squadra}-${indice}`}
                             className="border-t border-gray-800"
                           >
-                            <td className="px-3 py-3 font-medium text-white">
+
+                            <td className="px-3 py-3 font-semibold text-white">
                               {giocatore.nome}
                             </td>
 
@@ -673,11 +729,17 @@ export default function ImportListone({
                             </td>
 
                             <td className="px-3 py-3 text-gray-300">
+                              {giocatore.quotazioneAttuale ?? "-"}
+                            </td>
+
+                            <td className="px-3 py-3 text-gray-300">
                               {giocatore.fvm ?? "-"}
                             </td>
+
                           </tr>
                         )
                       )}
+
                   </tbody>
 
                 </table>
@@ -688,8 +750,8 @@ export default function ImportListone({
 
             {giocatori.length > 100 && (
               <p className="mt-3 text-center text-xs text-gray-500">
-                Visualizzati i primi 100
-                giocatori su{" "}
+                Mostrati i primi 100
+                calciatori su{" "}
                 {giocatori.length}.
               </p>
             )}
