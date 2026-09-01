@@ -85,7 +85,9 @@ export default function Home() {
     if (view === "asta") {
       const squadreSalvate = localStorage.getItem("fantai-squadre");
       if (squadreSalvate) {
-        setSquadre(JSON.parse(squadreSalvate));
+        const parsed = JSON.parse(squadreSalvate);
+        setSquadre(parsed);
+        if (parsed.length > 0) setSquadraAcquirente(parsed[0].nome);
       } else {
         const iniziali: Squadra[] = Array.from({ length: config.partecipanti }, (_, i) => ({
           nome: `Squadra ${i + 1}`,
@@ -135,13 +137,17 @@ export default function Home() {
   );
 
   const calcolaPrezzoConsigliato = (player: Player): number => {
-    // Base: FVM se disponibile, altrimenti quotazione
+    // Usa FVM come base, fallback alla quotazione
     const base = player.fvm || player.quotazioneIniziale || 10;
 
-    // Budget totale lega
-    const budgetTotale = config.budget * config.partecipanti;
+    // Fattore di scala: se il listone è per budget 1000, e la lega usa X crediti,
+    // moltiplichiamo per (budget / 1000)
+    const fattoreScala = config.budget / 1000;
 
-    // Inflazione: media prezzi pagati / media valori base
+    // Prezzo base proporzionato
+    let prezzoBase = base * fattoreScala;
+
+    // Inflazione: media prezzi pagati / media valori base dei giocatori acquistati
     let inflazione = 1;
     if (acquisti.length > 0) {
       const mediaPagata = acquisti.reduce((sum, a) => sum + a.prezzo, 0) / acquisti.length;
@@ -151,7 +157,7 @@ export default function Home() {
       }, 0) / acquisti.length;
       if (mediaBase > 0) {
         inflazione = mediaPagata / mediaBase;
-        inflazione = Math.max(0.8, Math.min(inflazione, 1.5)); // limitiamo
+        inflazione = Math.max(0.8, Math.min(inflazione, 1.5));
       }
     }
 
@@ -164,7 +170,7 @@ export default function Home() {
     );
     const totaleNecessario = config.partecipanti * fabbisognoRuolo;
     const domanda = Math.max(1, totaleNecessario - giocatoriRuoloAcquistati);
-    const fattoreDomanda = 1 + domanda / totaleNecessario;
+    const fattoreDomanda = 1 + (domanda / totaleNecessario) * 0.5; // max +50%
 
     // Budget residuo medio
     const budgetResiduoMedio = squadre.length > 0
@@ -172,10 +178,15 @@ export default function Home() {
       : config.budget;
     const fattoreBudget = budgetResiduoMedio / config.budget;
 
-    const prezzoBase = base * (budgetTotale / 1000);
-    const prezzoConsigliato = Math.round(prezzoBase * inflazione * fattoreDomanda * fattoreBudget);
+    // Calcolo finale
+    let prezzoConsigliato = prezzoBase * inflazione * fattoreDomanda * fattoreBudget;
 
-    return Math.max(1, prezzoConsigliato);
+    // Limite: non superare il 30% del budget individuale
+    const limiteMassimo = config.budget * 0.3;
+    prezzoConsigliato = Math.min(prezzoConsigliato, limiteMassimo);
+    prezzoConsigliato = Math.max(1, Math.round(prezzoConsigliato));
+
+    return prezzoConsigliato;
   };
 
   const registraAcquisto = () => {
@@ -242,6 +253,17 @@ export default function Home() {
     setMessaggio("");
     localStorage.removeItem("fantai-squadre");
     localStorage.removeItem("fantai-acquisti");
+    setSquadraAcquirente(iniziali[0]?.nome || "");
+  };
+
+  const cambiaNomeSquadra = (indice: number, nuovoNome: string) => {
+    const nuoveSquadre = [...squadre];
+    nuoveSquadre[indice] = { ...nuoveSquadre[indice], nome: nuovoNome };
+    setSquadre(nuoveSquadre);
+    localStorage.setItem("fantai-squadre", JSON.stringify(nuoveSquadre));
+    if (squadraAcquirente === squadre[indice]?.nome) {
+      setSquadraAcquirente(nuovoNome);
+    }
   };
 
   // ---------- RENDER ----------
@@ -254,6 +276,24 @@ export default function Home() {
           <button onClick={() => setView("dashboard")} className="mb-6 text-gray-400 underline">
             ← Torna alla Dashboard
           </button>
+
+          {/* Modifica nomi squadre */}
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
+            <h2 className="text-xl font-bold text-white mb-3">Nomi squadre</h2>
+            <div className="space-y-2">
+              {squadre.map((s, idx) => (
+                <div key={s.nome} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={s.nome}
+                    onChange={(e) => cambiaNomeSquadra(idx, e.target.value)}
+                    className="flex-1 rounded-lg border border-gray-700 bg-gray-800 p-2 text-white"
+                  />
+                  <span className="text-sm text-gray-400">Budget: {s.budget}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Riepilogo squadre */}
           <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
@@ -279,8 +319,8 @@ export default function Home() {
               onChange={(e) => setRicerca(e.target.value)}
               className="w-full rounded-xl border border-gray-700 bg-gray-800 p-3 text-white"
             />
-            <div className="mt-3 max-h-60 overflow-y-auto">
-              {giocatoriFiltrati.slice(0, 30).map((g, i) => (
+            <div className="mt-3 max-h-80 overflow-y-auto">
+              {giocatoriFiltrati.slice(0, 200).map((g, i) => (
                 <button
                   key={`${g.nome}-${i}`}
                   onClick={() => setGiocatoreSelezionato(g)}
@@ -290,10 +330,13 @@ export default function Home() {
                       : "bg-gray-800 text-gray-300 hover:bg-gray-700"
                   }`}
                 >
-                  {g.nome} {g.squadra && `(${g.squadra})`}
+                  {g.nome} {g.squadra && `(${g.squadra})`} {g.fvm ? `FVM: ${g.fvm}` : ""}
                 </button>
               ))}
               {giocatoriFiltrati.length === 0 && <p className="text-gray-500 text-sm">Nessun giocatore trovato.</p>}
+              {giocatoriFiltrati.length > 200 && (
+                <p className="text-xs text-gray-500">Mostrati i primi 200 risultati. Affina la ricerca.</p>
+              )}
             </div>
           </div>
 
@@ -302,7 +345,8 @@ export default function Home() {
             <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5 mb-6">
               <h2 className="text-xl font-bold text-white mb-2">{giocatoreSelezionato.nome}</h2>
               <p className="text-sm text-gray-400 mb-4">
-                {giocatoreSelezionato.ruolo} • {giocatoreSelezionato.squadra} • Quotazione: {giocatoreSelezionato.quotazioneIniziale}
+                {giocatoreSelezionato.ruolo} • {giocatoreSelezionato.squadra}
+                {giocatoreSelezionato.fvm && ` • FVM: ${giocatoreSelezionato.fvm}`}
               </p>
 
               {/* Suggerimenti algoritmo */}
