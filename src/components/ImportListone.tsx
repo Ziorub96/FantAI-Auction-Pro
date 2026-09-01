@@ -13,7 +13,7 @@ interface Player {
 }
 
 interface ImportListoneProps {
-  onImport?: (players: Player[]) => void;
+  onComplete?: (players: Player[]) => void;
 }
 
 function pulisci(value: unknown): string {
@@ -44,7 +44,6 @@ function trovaColonna(header: string[], candidati: string[]): number {
   return -1;
 }
 
-// Cerca tra le prime 10 righe quella che contiene la cella "Nome"
 function trovaRigaIntestazioni(rows: unknown[][]): number {
   const limite = Math.min(rows.length, 10);
   for (let r = 0; r < limite; r++) {
@@ -57,7 +56,7 @@ function trovaRigaIntestazioni(rows: unknown[][]): number {
   return -1;
 }
 
-export default function ImportListone({ onImport }: ImportListoneProps) {
+export default function ImportListone({ onComplete }: ImportListoneProps) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [errore, setErrore] = useState("");
@@ -165,13 +164,18 @@ export default function ImportListone({ onImport }: ImportListoneProps) {
 
       setPlayers(risultato);
       setInfo(`Importati ${risultato.length} giocatori dal foglio "${nomeFoglio}".`);
-      if (onImport) onImport(risultato);
     } catch (error) {
       console.error(error);
       setErrore(error instanceof Error ? error.message : "Errore durante l'importazione del file.");
     } finally {
       setLoading(false);
       event.target.value = "";
+    }
+  };
+
+  const vaiAllaDashboard = () => {
+    if (onComplete && players.length > 0) {
+      onComplete(players);
     }
   };
 
@@ -225,43 +229,52 @@ export default function ImportListone({ onImport }: ImportListoneProps) {
       )}
 
       {players.length > 0 && (
-        <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-bold text-white">Anteprima giocatori</h3>
-            <span className="rounded-full bg-green-600/20 px-3 py-1 text-xs font-bold text-green-400">
-              {players.length}
-            </span>
-          </div>
-          <div className="max-h-96 overflow-y-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 bg-gray-800 text-gray-300">
-                <tr>
-                  <th className="px-3 py-3">Giocatore</th>
-                  <th className="px-3 py-3">Sq</th>
-                  <th className="px-3 py-3">Ruolo</th>
-                  <th className="px-3 py-3">Qt.I</th>
-                  <th className="px-3 py-3">FVM</th>
-                </tr>
-              </thead>
-              <tbody>
-                {players.slice(0, 100).map((player, index) => (
-                  <tr key={`${player.nome}-${index}`} className="border-t border-gray-800">
-                    <td className="px-3 py-3 font-medium text-white">{player.nome}</td>
-                    <td className="px-3 py-3 text-gray-300">{player.squadra || "-"}</td>
-                    <td className="px-3 py-3 text-gray-300">{player.ruolo || "-"}</td>
-                    <td className="px-3 py-3 text-gray-300">{player.quotazioneIniziale ?? "-"}</td>
-                    <td className="px-3 py-3 text-gray-300">{player.fvm ?? "-"}</td>
+        <>
+          <div className="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Anteprima giocatori</h3>
+              <span className="rounded-full bg-green-600/20 px-3 py-1 text-xs font-bold text-green-400">
+                {players.length}
+              </span>
+            </div>
+            <div className="max-h-96 overflow-y-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 bg-gray-800 text-gray-300">
+                  <tr>
+                    <th className="px-3 py-3">Giocatore</th>
+                    <th className="px-3 py-3">Sq</th>
+                    <th className="px-3 py-3">Ruolo</th>
+                    <th className="px-3 py-3">Qt.I</th>
+                    <th className="px-3 py-3">FVM</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {players.slice(0, 100).map((player, index) => (
+                    <tr key={`${player.nome}-${index}`} className="border-t border-gray-800">
+                      <td className="px-3 py-3 font-medium text-white">{player.nome}</td>
+                      <td className="px-3 py-3 text-gray-300">{player.squadra || "-"}</td>
+                      <td className="px-3 py-3 text-gray-300">{player.ruolo || "-"}</td>
+                      <td className="px-3 py-3 text-gray-300">{player.quotazioneIniziale ?? "-"}</td>
+                      <td className="px-3 py-3 text-gray-300">{player.fvm ?? "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {players.length > 100 && (
+              <p className="mt-3 text-center text-xs text-gray-500">
+                Visualizzati i primi 100 giocatori su {players.length}.
+              </p>
+            )}
           </div>
-          {players.length > 100 && (
-            <p className="mt-3 text-center text-xs text-gray-500">
-              Visualizzati i primi 100 giocatori su {players.length}.
-            </p>
-          )}
-        </div>
+
+          <button
+            onClick={vaiAllaDashboard}
+            className="w-full rounded-xl bg-green-600 px-6 py-4 text-center font-bold text-white transition active:scale-95 hover:bg-green-500"
+          >
+            Vai alla Dashboard
+          </button>
+        </>
       )}
     </div>
   );
