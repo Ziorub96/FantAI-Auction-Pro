@@ -3,7 +3,11 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 
-export default function ImportListone() {
+interface ImportListoneProps {
+  onComplete: () => void;
+}
+
+export default function ImportListone({ onComplete }: ImportListoneProps) {
   const [fileName, setFileName] = useState<string>("");
   const [players, setPlayers] = useState<any[]>([]);
   const [message, setMessage] = useState<string>("");
@@ -19,7 +23,6 @@ export default function ImportListone() {
     const worksheet = workbook.Sheets[firstSheetName];
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-    // Salva i dati in localStorage
     localStorage.setItem("listone", JSON.stringify(jsonData));
     setPlayers(jsonData);
     setMessage(`Importati ${jsonData.length} giocatori dal file ${file.name}`);
@@ -56,6 +59,14 @@ export default function ImportListone() {
             ))}
           </ul>
         </div>
+      )}
+      {players.length > 0 && (
+        <button
+          onClick={onComplete}
+          className="mt-6 w-full rounded-lg bg-green-600 px-6 py-3 text-white font-semibold hover:bg-green-500 transition"
+        >
+          Vai alla Dashboard
+        </button>
       )}
     </div>
   );
