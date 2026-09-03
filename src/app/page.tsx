@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import ImportListone from "@/components/ImportListone";
 import { PREZZI_STORICI } from "@/data/prezziStorici";
 import { getTitolarita, getInfortunio } from "@/lib/giocatoriInfo";
+import { normalizzaNome } from "@/lib/normalizza";
 
 // ---------- TIPI ----------
 interface LegaConfig {
@@ -262,10 +263,7 @@ export default function Home() {
     prezzoAlgoritmo = Math.max(1, Math.round(prezzoAlgoritmo));
 
     // Prezzo storico (normalizzato)
-    const nomeNormalizzato = player.nome
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+    const nomeNormalizzato = normalizzaNome(player.nome);
     const prezzoStorico = PREZZI_STORICI[nomeNormalizzato];
 
     let prezzoFinale: number;
