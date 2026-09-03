@@ -1,15 +1,8 @@
 import { FORMAZIONI } from "@/data/formazioni";
 import { INFORTUNI } from "@/data/infortuni";
+import { normalizzaNome } from "@/lib/normalizza";
 
-// Normalizza una stringa: minuscola, senza accenti, senza spazi extra
-function normalizzaNome(nome: string): string {
-  return nome
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+// Non serve più la definizione locale di normalizzaNome
 
 // Estrae i nomi dei giocatori da una stringa di formazione
 function estraiNomiDaFormazione(formazione: string): string[] {
@@ -32,10 +25,6 @@ export interface InfortunioInfo {
   nota?: string;
 }
 
-/**
- * Cerca la percentuale di titolarità di un giocatore.
- * Se `squadraGiocatore` è fornita, cerca solo in quella squadra.
- */
 export function getTitolarita(
   nomeGiocatore: string,
   squadraGiocatore?: string
@@ -43,12 +32,11 @@ export function getTitolarita(
   const nomeCercato = normalizzaNome(nomeGiocatore);
 
   for (const squadra of FORMAZIONI) {
-    // Se è specificata una squadra e non coincide, salta
     if (squadraGiocatore && normalizzaNome(squadra.squadra) !== normalizzaNome(squadraGiocatore)) {
       continue;
     }
 
-    // 1. Controlla i ballottaggi (hanno percentuali esplicite)
+    // Controlla i ballottaggi
     for (const ballottaggio of squadra.ballottaggi) {
       const giocatori = ballottaggio.giocatori.map(normalizzaNome);
       if (giocatori.includes(nomeCercato)) {
@@ -61,21 +49,16 @@ export function getTitolarita(
       }
     }
 
-    // 2. Controlla se è un titolare certo (non in ballottaggio)
+    // Controlla i titolari certi
     const nomiTitolari = estraiNomiDaFormazione(squadra.formazione).map(normalizzaNome);
     if (nomiTitolari.includes(nomeCercato)) {
-      return {
-        percentuale: 100,
-      };
+      return { percentuale: 100 };
     }
   }
 
-  return null; // Non trovato
+  return null;
 }
 
-/**
- * Cerca un giocatore nell'elenco infortunati.
- */
 export function getInfortunio(nomeGiocatore: string): InfortunioInfo | null {
   const nomeCercato = normalizzaNome(nomeGiocatore);
 
