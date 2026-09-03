@@ -1,6 +1,6 @@
 export const INFORTUNI = [
   {
-    "giocatore": "Evan Ndicka",
+    "giocatore": "N'Dicka",
     "ruolo": "Difensore centrale",
     "squadra": "Roma",
     "infortunio": "Problema muscolare",
@@ -9,25 +9,25 @@ export const INFORTUNI = [
     "valore_mercato": "35,00 mln €"
   },
   {
-    "giocatore": "Romano Schmid",
+    "giocatore": "Schmid",
     "ruolo": "Trequartista",
-    "squadra": null,
+    "squadra": "Frosinone",
     "infortunio": "Affaticamento muscolare",
     "dal": "31/08/2026",
     "fino_ca": null,
     "valore_mercato": "15,00 mln €"
   },
   {
-    "giocatore": "Daniel Boloca",
+    "giocatore": "Boloca",
     "ruolo": "Mediano",
-    "squadra": null,
+    "squadra": "Sassuolo",
     "infortunio": "Artroscopia",
     "dal": "18/02/2026",
     "fino_ca": null,
     "valore_mercato": "4,00 mln €"
   },
   {
-    "giocatore": "Gustavo Varela",
+    "giocatore": "Varela G.",
     "ruolo": "Punta centrale",
     "squadra": "Monza",
     "infortunio": "Problema agli adduttori",
@@ -36,25 +36,25 @@ export const INFORTUNI = [
     "valore_mercato": "3,00 mln €"
   },
   {
-    "giocatore": "Patrick Ciurria",
+    "giocatore": "Ciurria",
     "ruolo": "Esterno di destra",
-    "squadra": null,
+    "squadra": "Monza",
     "infortunio": "Problema fisico",
     "dal": "14/08/2026",
     "fino_ca": null,
     "valore_mercato": "1,00 mln €"
   },
   {
-    "giocatore": "Yael Trepy",
+    "giocatore": "Trepy",
     "ruolo": "Punta centrale",
-    "squadra": null,
+    "squadra": "Cagliari",
     "infortunio": "Problema fisico",
     "dal": "17/08/2026",
     "fino_ca": null,
     "valore_mercato": "2,00 mln €"
   },
   {
-    "giocatore": "Yerry Mina",
+    "giocatore": "Mina",
     "ruolo": "Difensore centrale",
     "squadra": "Cagliari",
     "infortunio": "Problema al polpaccio",
@@ -63,7 +63,7 @@ export const INFORTUNI = [
     "valore_mercato": "2,50 mln €"
   },
   {
-    "giocatore": "Willem Geubbels",
+    "giocatore": "Geubbels",
     "ruolo": "Punta centrale",
     "squadra": "Lecce",
     "infortunio": "Distorsione alla caviglia",
@@ -72,7 +72,7 @@ export const INFORTUNI = [
     "valore_mercato": "5,00 mln €"
   },
   {
-    "giocatore": "Thomas Kristensen",
+    "giocatore": "Kristensen T.",
     "ruolo": "Difensore centrale",
     "squadra": "Atalanta",
     "infortunio": "Problemi alla caviglia",
@@ -81,7 +81,7 @@ export const INFORTUNI = [
     "valore_mercato": "12,00 mln €"
   },
   {
-    "giocatore": "Andrea Cambiaso",
+    "giocatore": "Cambiaso",
     "ruolo": "Terzino sinistro",
     "squadra": "Juventus",
     "infortunio": "Distorsione alla caviglia",
@@ -90,25 +90,7 @@ export const INFORTUNI = [
     "valore_mercato": "20,00 mln €"
   },
   {
-    "giocatore": "Filipe Bordon",
-    "ruolo": "Difensore centrale",
-    "squadra": null,
-    "infortunio": "Frattura del metatarso",
-    "dal": "23/07/2026",
-    "fino_ca": null,
-    "valore_mercato": "750 mila €"
-  },
-  {
-    "giocatore": "Alessio Furlanetto",
-    "ruolo": "Portiere",
-    "squadra": null,
-    "infortunio": "Operazione al legamento crociato",
-    "dal": "01/07/2026",
-    "fino_ca": null,
-    "valore_mercato": "350 mila €"
-  },
-  {
-    "giocatore": "Matteo Gabbia",
+    "giocatore": "Gabbia",
     "ruolo": "Difensore centrale",
     "squadra": "Milan",
     "infortunio": "Problemi alla caviglia",
@@ -117,7 +99,7 @@ export const INFORTUNI = [
     "valore_mercato": "17,00 mln €"
   },
   {
-    "giocatore": "Luca Pellegrini",
+    "giocatore": "Pellegrini Lo.",
     "ruolo": "Terzino sinistro",
     "squadra": "Roma",
     "infortunio": "Problemi alla coscia",
@@ -126,7 +108,7 @@ export const INFORTUNI = [
     "valore_mercato": "4,50 mln €"
   },
   {
-    "giocatore": "Devyne Rensch",
+    "giocatore": "Rensch",
     "ruolo": "Terzino destro",
     "squadra": "Roma",
     "infortunio": "Problema muscolare",
@@ -135,9 +117,9 @@ export const INFORTUNI = [
     "valore_mercato": "8,50 mln €"
   },
   {
-    "giocatore": "Hamed Traoré",
+    "giocatore": "Traorè Hj.",
     "ruolo": "Ala sinistra",
-    "squadra": null,
+    "squadra": "Genoa",
     "infortunio": "Problema agli adduttori",
     "dal": "02/05/2026",
     "fino_ca": null,
@@ -153,7 +135,7 @@ export const INFORTUNI = [
     "valore_mercato": "1,50 mln €"
   },
   {
-    "giocatore": "Danilo Cataldi",
+    "giocatore": "Cataldi",
     "ruolo": "Mediano",
     "squadra": "Lazio",
     "infortunio": "Infiammazione all'osso pubico",
@@ -162,7 +144,7 @@ export const INFORTUNI = [
     "valore_mercato": "3,50 mln €"
   },
   {
-    "giocatore": "Weston McKennie",
+    "giocatore": "McKennie",
     "ruolo": "Centrocampista",
     "squadra": "Juventus",
     "infortunio": "Affaticamento muscolare",
@@ -171,34 +153,25 @@ export const INFORTUNI = [
     "valore_mercato": "30,00 mln €"
   },
   {
-    "giocatore": "Lorenzo Venturino",
+    "giocatore": "Venturino",
     "ruolo": "Ala destra",
-    "squadra": null,
+    "squadra": "Genoa",
     "infortunio": "Operazione al ginocchio",
     "dal": "31/05/2026",
     "fino_ca": "04/09/2026",
     "valore_mercato": "5,00 mln €"
   },
   {
-    "giocatore": "Matías Moreno",
+    "giocatore": "Moreno M.",
     "ruolo": "Difensore centrale",
-    "squadra": null,
+    "squadra": "Venezia",
     "infortunio": "Problema muscolare",
     "dal": "18/08/2026",
     "fino_ca": "04/09/2026",
     "valore_mercato": "6,00 mln €"
   },
   {
-    "giocatore": "Pietro Pellegri",
-    "ruolo": "Punta centrale",
-    "squadra": null,
-    "infortunio": "Rottura del legamento crociato",
-    "dal": "16/01/2026",
-    "fino_ca": "05/09/2026",
-    "valore_mercato": "500 mila €"
-  },
-  {
-    "giocatore": "Adrián Bernabé",
+    "giocatore": "Bernabè",
     "ruolo": "Centrocampista",
     "squadra": "Parma",
     "infortunio": "Affaticamento muscolare",
@@ -207,25 +180,25 @@ export const INFORTUNI = [
     "valore_mercato": "15,00 mln €"
   },
   {
-    "giocatore": "Hans Nicolussi Caviglia",
+    "giocatore": "Nicolussi Caviglia",
     "ruolo": "Mediano",
-    "squadra": null,
+    "squadra": "Parma",
     "infortunio": "Pubalgia",
     "dal": "23/07/2026",
     "fino_ca": "07/09/2026",
     "valore_mercato": "6,00 mln €"
   },
   {
-    "giocatore": "Fali Candé",
+    "giocatore": "Candè",
     "ruolo": "Difensore centrale",
-    "squadra": null,
+    "squadra": "Sassuolo",
     "infortunio": "Rottura del legamento crociato",
     "dal": "14/01/2026",
     "fino_ca": "15/09/2026",
     "valore_mercato": "3,00 mln €"
   },
   {
-    "giocatore": "Matteo Palma",
+    "giocatore": "Palma",
     "ruolo": "Difensore centrale",
     "squadra": "Udinese",
     "infortunio": "Infortunio muscolare",
@@ -234,7 +207,7 @@ export const INFORTUNI = [
     "valore_mercato": "6,50 mln €"
   },
   {
-    "giocatore": "Adam Marusic",
+    "giocatore": "Marusic",
     "ruolo": "Terzino destro",
     "squadra": "Lazio",
     "infortunio": "Infortunio alla coscia",
@@ -243,7 +216,7 @@ export const INFORTUNI = [
     "valore_mercato": "2,50 mln €"
   },
   {
-    "giocatore": "Nicolò Rovella",
+    "giocatore": "Rovella",
     "ruolo": "Mediano",
     "squadra": "Lazio",
     "infortunio": "Infortunio al polpaccio",
@@ -252,25 +225,25 @@ export const INFORTUNI = [
     "valore_mercato": "23,00 mln €"
   },
   {
-    "giocatore": "Fisayo Dele-Bashiru",
+    "giocatore": "Dele-Bashiru",
     "ruolo": "Centrocampista",
-    "squadra": null,
+    "squadra": "Lazio",
     "infortunio": "Infortunio alla coscia",
     "dal": "24/08/2026",
     "fino_ca": "18/09/2026",
     "valore_mercato": "6,00 mln €"
   },
   {
-    "giocatore": "Oussama El Azzouzi",
+    "giocatore": "El Azzouzi O.",
     "ruolo": "Mediano",
-    "squadra": null,
+    "squadra": "Bologna",
     "infortunio": "Infortunio al bicipite femorale",
     "dal": "25/08/2026",
     "fino_ca": "22/09/2026",
     "valore_mercato": "1,80 mln €"
   },
   {
-    "giocatore": "Riccardo Orsolini",
+    "giocatore": "Orsolini",
     "ruolo": "Ala destra",
     "squadra": "Bologna",
     "infortunio": "Infortunio alla coscia",
@@ -279,7 +252,7 @@ export const INFORTUNI = [
     "valore_mercato": "15,00 mln €"
   },
   {
-    "giocatore": "Isak Hien",
+    "giocatore": "Hien",
     "ruolo": "Difensore centrale",
     "squadra": "Atalanta",
     "infortunio": "Problemi alla coscia",
@@ -289,34 +262,34 @@ export const INFORTUNI = [
     "nota": "Operato; rientro stimato metà ottobre-inizio novembre secondo Fantamaster"
   },
   {
-    "giocatore": "Kamaldeen Sulemana",
+    "giocatore": "Sulemana K.",
     "ruolo": "Ala sinistra",
-    "squadra": null,
+    "squadra": "Atalanta",
     "infortunio": "Infortunio al legamento collaterale mediale",
     "dal": "09/08/2026",
     "fino_ca": "01/10/2026",
     "valore_mercato": "17,00 mln €"
   },
   {
-    "giocatore": "Andrea Adorante",
+    "giocatore": "Adorante",
     "ruolo": "Punta centrale",
-    "squadra": null,
+    "squadra": "Venezia",
     "infortunio": "Infortunio alla schiena",
     "dal": "25/07/2026",
     "fino_ca": "01/10/2026",
     "valore_mercato": "4,50 mln €"
   },
   {
-    "giocatore": "Edoardo Pieragnolo",
+    "giocatore": "Pieragnolo",
     "ruolo": "Terzino sinistro",
-    "squadra": null,
+    "squadra": "Sassuolo",
     "infortunio": "Infortunio al legamento crociato",
     "dal": "01/10/2025",
     "fino_ca": "01/10/2026",
     "valore_mercato": "2,00 mln €"
   },
   {
-    "giocatore": "Nicolò Zaniolo",
+    "giocatore": "Zaniolo",
     "ruolo": "Seconda punta",
     "squadra": "Udinese",
     "infortunio": "Stiramento alla coscia",
@@ -325,16 +298,16 @@ export const INFORTUNI = [
     "valore_mercato": "15,00 mln €"
   },
   {
-    "giocatore": "Alessandro Zanoli",
+    "giocatore": "Zanoli",
     "ruolo": "Terzino destro",
-    "squadra": null,
+    "squadra": "Udinese",
     "infortunio": "Rottura del legamento crociato",
     "dal": "28/01/2026",
     "fino_ca": "01/10/2026",
     "valore_mercato": "4,50 mln €"
   },
   {
-    "giocatore": "Scott McTominay",
+    "giocatore": "McTominay",
     "ruolo": "Centrocampista",
     "squadra": "Napoli",
     "infortunio": "Problemi con il cuore",
@@ -343,43 +316,43 @@ export const INFORTUNI = [
     "valore_mercato": "40,00 mln €"
   },
   {
-    "giocatore": "Jayden Addai",
+    "giocatore": "Addai",
     "ruolo": "Ala destra",
-    "squadra": null,
+    "squadra": "Como",
     "infortunio": "Lacerazione del tendine d'achille",
     "dal": "26/02/2026",
     "fino_ca": "01/10/2026",
     "valore_mercato": "20,00 mln €"
   },
   {
-    "giocatore": "Luca Marianucci",
+    "giocatore": "Marianucci",
     "ruolo": "Difensore centrale",
-    "squadra": null,
+    "squadra": "Napoli",
     "infortunio": "Infortunio al legamento collaterale mediale",
     "dal": "10/08/2026",
     "fino_ca": "12/10/2026",
     "valore_mercato": "7,00 mln €"
   },
   {
-    "giocatore": "Fabiano Parisi",
+    "giocatore": "Parisi",
     "ruolo": "Terzino sinistro",
-    "squadra": null,
+    "squadra": "Fiorentina",
     "infortunio": "Infortunio al legamento crociato",
     "dal": "18/05/2026",
     "fino_ca": "19/10/2026",
     "valore_mercato": "6,00 mln €"
   },
   {
-    "giocatore": "Riyad Idrissi",
+    "giocatore": "Idrissi R.",
     "ruolo": "Terzino sinistro",
-    "squadra": null,
+    "squadra": "Cagliari",
     "infortunio": "Rottura del legamento crociato",
     "dal": "08/03/2026",
     "fino_ca": "30/10/2026",
     "valore_mercato": "4,00 mln €"
   },
   {
-    "giocatore": "Alessandro Buongiorno",
+    "giocatore": "Buongiorno",
     "ruolo": "Difensore centrale",
     "squadra": "Napoli",
     "infortunio": "Operazione al ginocchio",
@@ -388,16 +361,16 @@ export const INFORTUNI = [
     "valore_mercato": "30,00 mln €"
   },
   {
-    "giocatore": "Marin Šverko",
+    "giocatore": "Sverko",
     "ruolo": "Difensore centrale",
-    "squadra": null,
+    "squadra": "Venezia",
     "infortunio": "Problema fisico",
     "dal": "01/07/2026",
     "fino_ca": "31/10/2026",
     "valore_mercato": "1,50 mln €"
   },
   {
-    "giocatore": "Matteo Pessina",
+    "giocatore": "Pessina",
     "ruolo": "Centrocampista",
     "squadra": "Monza",
     "infortunio": "Infortunio al ginocchio",
@@ -406,16 +379,16 @@ export const INFORTUNI = [
     "valore_mercato": "5,00 mln €"
   },
   {
-    "giocatore": "Jeff Ekhator",
+    "giocatore": "Ekhator",
     "ruolo": "Punta centrale",
-    "squadra": null,
+    "squadra": "Juventus",
     "infortunio": "Stiramento alla coscia",
     "dal": "30/08/2026",
     "fino_ca": "02/11/2026",
     "valore_mercato": "18,00 mln €"
   },
   {
-    "giocatore": "Kenan Yıldız",
+    "giocatore": "Yildiz",
     "ruolo": "Ala sinistra",
     "squadra": "Juventus",
     "infortunio": "Frattura del piede",
@@ -424,16 +397,7 @@ export const INFORTUNI = [
     "valore_mercato": "75,00 mln €"
   },
   {
-    "giocatore": "Franco Israel",
-    "ruolo": "Portiere",
-    "squadra": null,
-    "infortunio": "Infortunio alla spalla",
-    "dal": "19/06/2026",
-    "fino_ca": "04/12/2026",
-    "valore_mercato": "2,50 mln €"
-  },
-  {
-    "giocatore": "Khéphren Thuram",
+    "giocatore": "Thuram K.",
     "ruolo": "Centrocampista",
     "squadra": "Juventus",
     "infortunio": "Problemi al ginocchio",
@@ -442,7 +406,7 @@ export const INFORTUNI = [
     "valore_mercato": "38,00 mln €"
   },
   {
-    "giocatore": "Ismaël Koné",
+    "giocatore": "Konè M.",
     "ruolo": "Centrocampista",
     "squadra": "Roma",
     "infortunio": "Frattura di tibia e perone",
