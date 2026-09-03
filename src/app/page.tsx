@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import ImportListone from "@/components/ImportListone";
 import { PREZZI_STORICI } from "@/data/prezziStorici";
+import { getTitolarita, getInfortunio } from "@/lib/giocatoriInfo";
 
 // ---------- TIPI ----------
 interface LegaConfig {
@@ -10,10 +11,10 @@ interface LegaConfig {
   budget: number;
   modalita: "classic" | "mantra";
   rosa: {
-    portieri: number;
-    difensori: number;
-    centrocampisti: number;
-    attaccanti: number;
+    P: number;
+    D: number;
+    C: number;
+    A: number;
   };
   regole: {
     modificatoreDifesa: boolean;
@@ -71,15 +72,16 @@ const PROFILI_SCANDICCI: ProfiloStorico[] = [
   { nome: "Toniesi", distribuzione: { P: 6, D: 8, C: 21, A: 63 }, stile: "Tradizionalista", topPagati: 3, lowCost: 7 },
 ];
 
+// ---------- CONFIGURAZIONE INIZIALE ----------
 const configIniziale: LegaConfig = {
   partecipanti: 8,
   budget: 500,
   modalita: "classic",
   rosa: {
-    portieri: 3,
-    difensori: 8,
-    centrocampisti: 8,
-    attaccanti: 6,
+    P: 3,
+    D: 8,
+    C: 8,
+    A: 6,
   },
   regole: {
     modificatoreDifesa: false,
@@ -104,8 +106,8 @@ export default function Home() {
   const [squadraAcquirente, setSquadraAcquirente] = useState("");
   const [messaggio, setMessaggio] = useState("");
   const [filtroRuolo, setFiltroRuolo] = useState<string>("tutti");
-  const [ruoliCompletati, setRuoliCompletati] = useState<Set<string>>(new Set());
   const [legaScandicci, setLegaScandicci] = useState<boolean>(false);
+  const ruoliCompletatiRef = useRef<Set<string>>(new Set());
 
   // Inizializza squadre quando si entra in asta
   useEffect(() => {
@@ -181,19 +183,28 @@ export default function Home() {
     return [...lista].sort((a, b) => (b.fvm || 0) - (a.fvm || 0));
   }, [giocatoriDisponibili, filtroRuolo, ricerca]);
 
-  // Controlla se un ruolo è esaurito e genera analisi
+  // Controlla se un ruolo è esaurito e genera analisi (senza dipendenza ruoliCompletati)
   useEffect(() => {
     const ruoli = ["P", "D", "C", "A"];
-    const nuoviCompletati = new Set(ruoliCompletati);
+    const nuoviCompletati = new Set(ruoliCompletatiRef.current);
+    let analisiAggiornata = false;
+
     for (const ruolo of ruoli) {
       const disponibili = giocatoriDisponibili.filter((g) => g.ruolo === ruolo);
-      if (disponibili.length === 0 && !ruoliCompletati.has(ruolo)) {
+      if (disponibili.length === 0 && !nuoviCompletati.has(ruolo)) {
         nuoviCompletati.add(ruolo);
-        setMessaggio(`*** ${ruolo} FINITI ***\n\n${generaAnalisiRuolo(ruolo, squadre, giocatori)}`);
+        analisiAggiornata = true;
       }
     }
-    setRuoliCompletati(nuoviCompletati);
-  }, [giocatoriDisponibili, squadre, giocatori, ruoliCompletati]);
+
+    if (analisiAggiornata) {
+      ruoliCompletatiRef.current = nuoviCompletati;
+      const ultimoRuolo = Array.from(nuoviCompletati).pop() || "";
+      if (ultimoRuolo) {
+        setMessaggio(`*** ${ultimoRuolo} FINITI ***\n\n${generaAnalisiRuolo(ultimoRuolo, squadre, giocatori)}`);
+      }
+    }
+  }, [giocatoriDisponibili, squadre, giocatori]);
 
   // Algoritmo prezzo consigliato con dati storici
   const calcolaPrezzoConsigliato = (player: Player): number => {
@@ -271,6 +282,11 @@ export default function Home() {
     return prezzoFinale;
   };
 
+  // useMemo per il prezzo consigliato
+  const prezzoConsigliato = useMemo(() => {
+    return giocatoreSelezionato ? calcolaPrezzoConsigliato(giocatoreSelezionato) : 0;
+  }, [giocatoreSelezionato, acquisti, squadre, config, legaScandicci, giocatori]);
+
   const registraAcquisto = () => {
     if (!giocatoreSelezionato || !prezzo || !squadraAcquirente) {
       setMessaggio("Seleziona giocatore, inserisci prezzo e scegli squadra.");
@@ -338,7 +354,7 @@ export default function Home() {
     setGiocatoreSelezionato(null);
     setPrezzo("");
     setMessaggio("");
-    setRuoliCompletati(new Set());
+    ruoliCompletatiRef.current = new Set();
     localStorage.removeItem("fantai-squadre");
     localStorage.removeItem("fantai-acquisti");
     setSquadraAcquirente(iniziali[0]?.nome || "");
@@ -384,7 +400,6 @@ export default function Home() {
   // ---------- RENDER ----------
 
   if (view === "asta") {
-    const prezzoConsigliato = giocatoreSelezionato ? calcolaPrezzoConsigliato(giocatoreSelezionato) : 0;
     return (
       <main className="min-h-screen bg-black text-white px-5 py-8">
         <div className="mx-auto w-full max-w-md">
@@ -506,6 +521,7 @@ export default function Home() {
                 {giocatoreSelezionato.fvm && ` • FVM: ${giocatoreSelezionato.fvm}`}
               </p>
 
+              {/* Prezzi suggeriti */}
               <div className="mb-4 grid grid-cols-3 gap-3">
                 <div className="rounded-xl bg-green-950 p-3 text-center">
                   <p className="text-xs text-green-400">Consigliato</p>
@@ -521,6 +537,46 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Info titolarità e infortunio */}
+              {(() => {
+                const infoTitolarita = getTitolarita(
+                  giocatoreSelezionato.nome,
+                  giocatoreSelezionato.squadra
+                );
+                const infoInfortunio = getInfortunio(giocatoreSelezionato.nome);
+                return (
+                  <div className="mb-4 space-y-2">
+                    {infoTitolarita && (
+                      <div className="rounded-xl bg-gray-800/50 p-3">
+                        <p className="text-sm font-semibold text-blue-300">
+                          Titolarità: {infoTitolarita.percentuale}%
+                          {infoTitolarita.posizione && ` (${infoTitolarita.posizione})`}
+                        </p>
+                        {infoTitolarita.nota && (
+                          <p className="text-xs text-gray-400">{infoTitolarita.nota}</p>
+                        )}
+                      </div>
+                    )}
+                    {infoInfortunio && (
+                      <div className="rounded-xl bg-red-950/40 border border-red-800 p-3">
+                        <p className="text-sm font-semibold text-red-400">
+                          ⚠️ Infortunato: {infoInfortunio.tipo}
+                        </p>
+                        {infoInfortunio.fino_ca && (
+                          <p className="text-xs text-red-300">
+                            Rientro previsto: {infoInfortunio.fino_ca}
+                          </p>
+                        )}
+                        {infoInfortunio.nota && (
+                          <p className="text-xs text-red-300">{infoInfortunio.nota}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Registrazione acquisto */}
               <div className="space-y-3">
                 <input
                   type="number"
@@ -621,6 +677,9 @@ export default function Home() {
               localStorage.removeItem("fantai-squadre");
               localStorage.removeItem("fantai-acquisti");
               localStorage.removeItem("fantai-lega-scandicci");
+              setGiocatori([]);
+              setSquadre([]);
+              setAcquisti([]);
               window.location.reload();
             }}
             className="mt-3 w-full rounded-xl bg-gray-700 px-6 py-3 font-semibold text-white"
@@ -776,10 +835,10 @@ export default function Home() {
             <div className="mt-6 space-y-3">
               {(
                 [
-                  ["portieri", "Portieri"],
-                  ["difensori", "Difensori"],
-                  ["centrocampisti", "Centrocampisti"],
-                  ["attaccanti", "Attaccanti"],
+                  ["P", "Portieri"],
+                  ["D", "Difensori"],
+                  ["C", "Centrocampisti"],
+                  ["A", "Attaccanti"],
                 ] as const
               ).map(([chiave, nome]) => (
                 <div key={chiave} className="flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900 p-4">
